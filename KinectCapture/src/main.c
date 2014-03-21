@@ -26,7 +26,7 @@
 GtkWidget *window = NULL;
 GtkWidget *button_prog_run = NULL;
 GtkWidget *vbox_main = NULL, *hbox_iface = NULL;
-GtkWidget *menubar = NULL, *file_menu = NULL, *file_menu_item = NULL, *load_menu_item = NULL, *quit_menu_item = NULL, *help_menu = NULL, *help_menu_item = NULL, *about_menu_item = NULL;
+GtkWidget *menubar = NULL, *file_menu = NULL, *file_menu_item = NULL, *load_menu_item = NULL, *save_menu_item = NULL, *quit_menu_item = NULL, *help_menu = NULL, *help_menu_item = NULL, *about_menu_item = NULL;
 GtkWidget *check_rc = NULL, *text_rc = NULL, *edit_rc = NULL, *check_prog = NULL;
 GtkWidget *check_rc_cmos = NULL, *text_rc_cmos = NULL, *edit_rc_cmos = NULL;
 GtkWidget *check_bright = NULL, *text_bright = NULL, *edit_bright = NULL;
@@ -169,11 +169,13 @@ int main(int argc, char *argv[])
     file_menu_item = gtk_menu_item_new_with_label("File");
 
     load_menu_item = gtk_menu_item_new_with_label("Load Program");
+    save_menu_item = gtk_menu_item_new_with_label("Save Depth to RGB Registration Data");
     quit_menu_item = gtk_menu_item_new_with_label("Quit");
 
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_menu_item), file_menu);
 
     gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), load_menu_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), save_menu_item);
     gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), quit_menu_item);
 
     help_menu = gtk_menu_new();
@@ -190,6 +192,7 @@ int main(int argc, char *argv[])
     gtk_box_pack_start(GTK_BOX(vbox_main), menubar, FALSE, TRUE, 0);
 
     g_signal_connect(G_OBJECT(load_menu_item), "activate", G_CALLBACK(load_file), (gpointer)window);
+    g_signal_connect(G_OBJECT(save_menu_item), "activate", G_CALLBACK(save_reg), (gpointer)window);
     g_signal_connect(G_OBJECT(quit_menu_item), "activate", G_CALLBACK(delete_event), NULL);
     g_signal_connect(G_OBJECT(about_menu_item), "activate", G_CALLBACK(show_about), (gpointer)window);
 
@@ -899,6 +902,34 @@ static void load_file(GtkWidget *widget, gpointer data)
         if(codes.allocated==1) unload_program_code();
         load_program_code(filename);
         if(codes.nlines>1) gtk_widget_set_sensitive(GTK_WIDGET(button_prog_run), program_mode_enable);
+        g_free(filename);
+    }
+    else gtk_widget_destroy(dialog);
+}
+
+static void save_reg(GtkWidget *widget, gpointer data)
+{
+    GtkWidget *dialog = gtk_file_chooser_dialog_new("Save File", GTK_WINDOW(widget), GTK_FILE_CHOOSER_ACTION_SAVE, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT, NULL);
+    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (dialog), TRUE);
+    freenect_registration reg = freenect_copy_registration(f_dev);
+    if(gtk_dialog_run(GTK_DIALOG(dialog))==GTK_RESPONSE_ACCEPT)
+    {
+        FILE *fp;
+        char *filename;
+        int i;
+        GtkFileFilter *fnamefilter = gtk_file_filter_new();
+        gtk_file_filter_set_name(fnamefilter, "Kinect Registration File");
+        gtk_file_filter_add_pattern(fnamefilter, ".reg");
+        gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), fnamefilter);
+        filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+        gtk_widget_destroy(dialog);
+        if((fp = fopen(filename, "wb"))!=NULL)
+        {
+            fwrite(reg.raw_to_mm_shift, sizeof(uint16_t),1024, fp);
+            fwrite(reg.depth_to_rgb_shift, sizeof(int32_t),8192*2, fp);
+            for(i=0; i<640*480; ++i) fwrite(reg.registration_table[i], sizeof(int32_t),2, fp);
+            fclose(fp);
+        }
         g_free(filename);
     }
     else gtk_widget_destroy(dialog);
