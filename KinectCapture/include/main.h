@@ -28,6 +28,7 @@
 #include "libfreenect.h"
 #include "cameras.h"
 #include "libfreenect-registration.h"
+
 #include <math.h>
 #include <assert.h>
 #include <pthread.h>
