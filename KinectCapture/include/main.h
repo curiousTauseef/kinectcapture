@@ -27,6 +27,7 @@
 #include <string.h>
 #include "libfreenect.h"
 #include "cameras.h"
+#include "libfreenect-registration.h"
 #include <math.h>
 #include <assert.h>
 #include <pthread.h>
@@ -69,6 +70,7 @@ static void resize_gl_scene(int width, int height);
 
 static void show_about(GtkWidget *widget, gpointer data);
 static void load_file(GtkWidget *widget, gpointer data);
+static void save_reg(GtkWidget *widget, gpointer data);
 
 static int freenect_run();
 
