@@ -191,10 +191,10 @@ int main(int argc, char *argv[])
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar), help_menu_item);
     gtk_box_pack_start(GTK_BOX(vbox_main), menubar, FALSE, TRUE, 0);
 
-    g_signal_connect(G_OBJECT(load_menu_item), "activate", G_CALLBACK(load_file), (gpointer)window);
-    g_signal_connect(G_OBJECT(save_menu_item), "activate", G_CALLBACK(save_reg), (gpointer)window);
+    g_signal_connect_swapped(G_OBJECT(load_menu_item), "activate", G_CALLBACK(load_file), (gpointer)window);
+    g_signal_connect_swapped(G_OBJECT(save_menu_item), "activate", G_CALLBACK(save_reg), (gpointer)window);
     g_signal_connect(G_OBJECT(quit_menu_item), "activate", G_CALLBACK(delete_event), NULL);
-    g_signal_connect(G_OBJECT(about_menu_item), "activate", G_CALLBACK(show_about), (gpointer)window);
+    g_signal_connect_swapped(G_OBJECT(about_menu_item), "activate", G_CALLBACK(show_about), (gpointer)window);
 
     /* graphics area design */
     drawing_area = gtk_drawing_area_new();
