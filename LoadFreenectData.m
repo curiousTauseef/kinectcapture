@@ -149,6 +149,8 @@ if(fp~=-1)
 
     curr_depth_fmt = uint8(fgets(fp, 1));
     switch(curr_depth_fmt)
+        case 255
+            FData.DepthFormat = '';
         case 0
             FData.DepthFormat = 'FREENECT_DEPTH_11BIT';
         case 1
