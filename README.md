@@ -18,7 +18,7 @@ f) code-blocks.
 ---------
 User Interface
 ---------
-The user-interface consist of the real-time depth and rgb/ir display with optional histogram display for rgb/ir. The menu consists of 'Load Program' item to load a valid program. The lower end of the user interface contains the Write Register, Write CMOS Register, Run program, Brightness Set input options.
+The user-interface consists of the real-time depth and rgb/ir display with optional histogram display for rgb/ir. The menu consists of 'Load Program' item to load a valid program. The lower end of the user interface contains the Write Register, Write CMOS Register, Run program, Brightness Set input options.
 
 
 -------------------
