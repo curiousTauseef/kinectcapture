@@ -134,6 +134,7 @@ freenect_context *f_ctx = NULL;
 freenect_device *f_dev = NULL;
 int freenect_angle = 0;
 int freenect_led;
+int nr_devices, user_device_number = 0;
 
 freenect_video_format requested_format = FREENECT_VIDEO_RGB;
 freenect_video_format current_format = FREENECT_VIDEO_RGB;
@@ -272,6 +273,38 @@ int main(int argc, char *argv[])
 
     if(freenect_run()==0) gtk_main();
     return 0;
+}
+
+static void clean_all_data()
+{
+    die = 1;
+    pthread_join(freenect_thread, NULL);
+    if(program_mode_enable==1)
+    {
+        free(prog_cap_data.data_rgb);
+        free(prog_cap_data.data_ir);
+        free(prog_cap_data.data_depth);
+    }
+    free(depth_mid);
+    free(depth_mid_raw);
+    free(depth_front);
+    free(depth_front_raw);
+    free(rgb_back);
+    free(rgb_mid);
+    free(rgb_front);
+    free(exposure_pixels);
+    
+    prog_cap_data.data.rgb = NULL;
+    prog_cap_data.data.ir = NULL;
+    prog_cap_data.data.depth = NULL;
+    depth_mid = NULL;
+    depth_mid_raw = NULL;
+    depth_front = NULL;
+    depth_front_raw = NULL;
+    rgb_back = NULL:
+    rgb_mid = NULL;
+    rgb_front = NULL;
+    exposure_pixels = NULL;
 }
 
 gint delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
@@ -1485,7 +1518,7 @@ static int freenect_run()
 {
     FILEPOINTER search_file = NULL;
     char search_filename[32];
-    int i, nr_devices, user_device_number = 0;
+    int i;
     depth_mid = (uint8_t*)malloc(640*480*3);
     depth_mid_raw = (uint8_t*)malloc(640*480*3);
     depth_front = (uint8_t*)malloc(640*480*3);
