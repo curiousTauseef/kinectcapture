@@ -48,6 +48,7 @@
 #define mat_sleep(x) usleep((x)*1000)
 #endif
 
+static void clean_all_data();
 gint delete_event(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer user_data);
 
