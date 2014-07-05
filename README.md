@@ -52,6 +52,8 @@ n - depth smoothing on.
 
 p - toggles projector.
 
+q - switches among multiple kinects.
+
 r - runs loaded program if any.
 
 s - resets angle to 0.
