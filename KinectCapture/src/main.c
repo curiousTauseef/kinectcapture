@@ -1335,8 +1335,10 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
     case GDK_Q:
         if(!(GTK_WIDGET_HAS_FOCUS(edit_rc)||GTK_WIDGET_HAS_FOCUS(edit_rc_cmos)||GTK_WIDGET_HAS_FOCUS(edit_bright)||program_running))
         {
-            switch_    
+            run_comm_switch_with_arg(-1);    
         }
+        break;
+    }
     return FALSE;
 }
 
