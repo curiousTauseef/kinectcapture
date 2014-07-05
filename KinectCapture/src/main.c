@@ -906,6 +906,16 @@ static void run_comm_brightness_with_arg(int arg)
     write_register_mine(f_dev, 0x15, (uint16_t)arg);
 }
 
+static void run_comm_switch_with_arg(int arg)
+{
+    nr_devices = freenect_num_devices(f_ctx);
+    clear_all_data();
+    if(arg<0) ++user_device_number;
+    else user_device_number = arg;
+    if(user_device_number>=nr_devices) user_device_number = 0;
+    die = 0;
+    freenect_run();
+}
 
 static void show_about(GtkWidget *widget, gpointer data)
 {
@@ -1321,7 +1331,12 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
             if(gtk_widget_get_sensitive(GTK_WIDGET(button_prog_run)))run_current_program(NULL);
         }
         break;
-    }
+    case GDK_q:
+    case GDK_Q:
+        if(!(GTK_WIDGET_HAS_FOCUS(edit_rc)||GTK_WIDGET_HAS_FOCUS(edit_rc_cmos)||GTK_WIDGET_HAS_FOCUS(edit_bright)||program_running))
+        {
+            switch_    
+        }
     return FALSE;
 }
 
