@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-static void clean_all_data()
+static void clear_all_data()
 {
     die = 1;
     pthread_join(freenect_thread, NULL);
@@ -293,15 +293,15 @@ static void clean_all_data()
     free(rgb_mid);
     free(rgb_front);
     free(exposure_pixels);
-    
-    prog_cap_data.data.rgb = NULL;
-    prog_cap_data.data.ir = NULL;
-    prog_cap_data.data.depth = NULL;
+
+    prog_cap_data.data_rgb = NULL;
+    prog_cap_data.data_ir = NULL;
+    prog_cap_data.data_depth = NULL;
     depth_mid = NULL;
     depth_mid_raw = NULL;
     depth_front = NULL;
     depth_front_raw = NULL;
-    rgb_back = NULL:
+    rgb_back = NULL;
     rgb_mid = NULL;
     rgb_front = NULL;
     exposure_pixels = NULL;
@@ -1335,7 +1335,7 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
     case GDK_Q:
         if(!(GTK_WIDGET_HAS_FOCUS(edit_rc)||GTK_WIDGET_HAS_FOCUS(edit_rc_cmos)||GTK_WIDGET_HAS_FOCUS(edit_bright)||program_running))
         {
-            run_comm_switch_with_arg(-1);    
+            run_comm_switch_with_arg(-1);
         }
         break;
     }
