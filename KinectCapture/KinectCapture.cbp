@@ -40,6 +40,7 @@
 			<Add option="`pkg-config --libs gtkglext-1.0`" />
 			<Add library="lib/libfreenect.a" />
 			<Add library="lib/libfreenect_sync.a" />
+			<Add library="/usr/lib/i386-linux-gnu/libusb-1.0.so" />
 		</Linker>
 		<Unit filename="include/cameras.h" />
 		<Unit filename="include/commontypes.h" />
