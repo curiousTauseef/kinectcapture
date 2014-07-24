@@ -58,7 +58,7 @@ CODE_LOOK_UP_TABLE_WITH_ARG code_look_up_table_with_arg[13] =
 {
     0, /* not used */
     run_comm_pause_with_arg, /* 12 pause code */
-    run_comm_brightness_with_arg, /* 13 pause code */
+    run_comm_brightness_with_arg, /* 13 brightness code */
 };
 
 struct program_capture_data
