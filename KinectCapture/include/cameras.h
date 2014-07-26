@@ -23,6 +23,10 @@
  * Binary distributions must follow the binary distribution requirements of
  * either License.
  */
+ 
+/*
+ * This file is a modified work of the original part of the OpenKinect Project.
+ */
 
 #ifndef CAMERAS_H
 #define CAMERAS_H
