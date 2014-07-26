@@ -6,20 +6,20 @@
 </line-comment>
 
 <pattern-item _name="Number" style="Decimal">
-		<regex>0|[\+-]?[1-9][0-9]*</regex>
-	</pattern-item>
+	<regex>0|[\+-]?[1-9][0-9]*</regex>
+</pattern-item>
 
 <keyword-list _name = "Command" style = "Keyword" case-sensitive = "TRUE">
-    <keyword>START</keyword>
-    <keyword>STOP</keyword>
-    <keyword>PAUSE</keyword>
-    <keyword>PROJECTOR</keyword>
-    <keyword>BRIGHTNESS</keyword>
-    <keyword>SWITCH</keyword>
-    <keyword>LOOP</keyword>
+	<keyword>START</keyword>
+	<keyword>STOP</keyword>
+	<keyword>PAUSE</keyword>
+	<keyword>PROJECTOR</keyword>
+	<keyword>BRIGHTNESS</keyword>
+	<keyword>SWITCH</keyword>
+	<keyword>LOOP</keyword>
 	<keyword>END</keyword>
-    <keyword>MODE</keyword>
-    <keyword>CAPTURE</keyword>
+	<keyword>MODE</keyword>
+	<keyword>CAPTURE</keyword>
 </keyword-list>
 
 </language>
