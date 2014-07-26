@@ -99,7 +99,6 @@ int getcodenum(const char *str)
             break;
         }
     }
-    printf("NC: %d (%s)\n", c, str);
     return c;
 }
 
@@ -118,7 +117,6 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
         return pc;
     }
     c = getcodenum(c_word);
-    printf("C: %d\n", c);
     if(c==0) return pc;
     else
     {
@@ -195,8 +193,6 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
             pc.codenum = c+5;
         }
     }
-    printf("CODENUM: %d++\n", pc.codenum);
-
     return pc;
 }
 
@@ -268,7 +264,6 @@ void load_program_code(const char *fname)
         {
             while(!dtype_stack_is_empty(stck)) dtype_stack_pop(stck);
             dtype_stack_free(stck);
-            printf("Bad Looping\n");
             if(codes.allocated) free(codes.cwrds);
             codes.allocated = 0;
             codes.nlines = 0;

@@ -708,11 +708,8 @@ static void *run_current_program_thread(void *x)
     if(program_mode_enable==1 && codes.allocated==1)
     {
         prog_stck = dtype_stack_creat();
-        printf("------------------\nRUNNING\n------------------\n");
         for(prog_k=0; prog_k<codes.nlines; ++prog_k)
         {
-            printf("CODENUM: %d (VAL: %d)\n", codes.cwrds[prog_k].codenum, codes.cwrds[prog_k].codeval);
-
             switch(codes.cwrds[prog_k].codenum)
             {
             case 7: /* start */
@@ -834,7 +831,6 @@ static void run_comm_start()
     gtk_widget_set_sensitive(GTK_WIDGET(button_prog_run), FALSE);
     prog_tmp.first = prog_k;
     prog_tmp.second = codes.cwrds[prog_k].codeval-1;
-    printf("Start - SP(PUSH): first: %d second: %d\n", prog_tmp.first, prog_tmp.second);
     dtype_stack_push(prog_stck, prog_tmp);
 }
 
@@ -943,7 +939,6 @@ static void run_comm_projector()
 static void run_comm_end()
 {
     prog_tmp2 = dtype_stack_top(prog_stck);
-    printf("SP(TOP): first: %d second: %d\n", prog_tmp2->first, prog_tmp2->second);
     if(prog_tmp2->second<=0)
     {
         dtype_stack_pop(prog_stck);
@@ -980,7 +975,6 @@ static void run_comm_loop_with_arg(int arg)
 {
     prog_tmp.first = prog_k;
     prog_tmp.second = codes.cwrds[prog_k].codeval-1;
-    printf("SP(PUSH): first: %d second: %d\n", prog_tmp.first, prog_tmp.second);
     dtype_stack_push(prog_stck, prog_tmp);
 }
 

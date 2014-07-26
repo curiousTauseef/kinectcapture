@@ -26,6 +26,9 @@ KinectCapture is a user-friendly modified freenect front-end software to capture
 ----------------
 Version History
 ----------------
+----0.3-----
+Added multiple kinects support.
+Added looping in program mode.
 ----0.2-----
 Added under-exposure and overexposure display.
 Corrected mode-6 10bit IR image display. 
@@ -33,7 +36,7 @@ Corrected mode-6 10bit IR image display.
 -----------
 Compilation
 -----------
-KinectCapture requires the following libraries and ides to get compiled
+KinectCapture requires the following libraries and IDEs to get compiled
 a) freenect (modified) - in the lib32, lib64, libw32 folders
 b) pthread
 c) gtk
@@ -41,9 +44,9 @@ d) gtkglext
 e) gl, glu
 f) code-blocks.
 
----------
+--------------
 User Interface
----------
+--------------
 The user-interface consist of the real-time depth and rgb/ir display with optional histogram display for rgb/ir. The menu consists of 'Load Program' item to load a valid program. The lower end of the user interface contains the Write Register, Write CMOS Register, Run program, Brightness Set input options.
 
 -------------------
@@ -63,6 +66,7 @@ h - toggles histogram display.
 m - depth smoothing off.
 n - depth smoothing on.
 p - toggles projector.
+q - switches among multiple kinects.
 r - runs loaded program if any.
 s - resets angle to 0.
 w - increases tilt angle.
@@ -96,11 +100,14 @@ CAPTURE - captures current mode in memory.
 SAVE - saves captured data to raw file format.
 PROJECTOR - toggles projector.
 BRIGHTNESS <value> - changes the ir brightness to <value> level which must be in 0-50 range.
+SWITCH <value> - change current device to kinect number <value> for multiple kinects. (-1 for next kinect)
+LOOP <value> - beginning of a loop for <value> times.
+END - end of a loop.
 
 ------------------------------
 Capturing data through program
 ------------------------------
-To capture all the depth, rgb and ir images, all the required modes need to be captured. e.g. in 640X480 resolution, one must capture both mode 1/2 (for depth and rgb) and mode 3 (for depth and ir) as in the demo program below.
+For example to capture all the depth, rgb and ir images, all the required modes need to be captured. e.g. in 640X480 resolution, one must capture both mode 1/2 (for depth and rgb) and mode 3 (for depth and ir) as in the demo program below.
 
 % this a demo program to capture all data
 START

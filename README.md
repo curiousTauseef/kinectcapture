@@ -1,4 +1,4 @@
-kinectcapture
+KinectCapture
 =============
 
 KinectCapture is a user-friendly modified freenect front-end software to capture Kinect raw data.
@@ -6,7 +6,7 @@ KinectCapture is a user-friendly modified freenect front-end software to capture
 -----------
 Compilation
 -----------
-KinectCapture requires the following libraries and ides to get compiled
+KinectCapture requires the following libraries and IDEs to get compiled
 a) freenect (modified) - in the lib32, lib64, libw32 folders
 b) pthread
 c) gtk
@@ -15,9 +15,9 @@ e) gl, glu
 f) code-blocks.
 
 
----------
+--------------
 User Interface
----------
+--------------
 The user-interface consists of the real-time depth and rgb/ir display with optional histogram display for rgb/ir. The menu consists of 'Load Program' item to load a valid program. The lower end of the user interface contains the Write Register, Write CMOS Register, Run program, Brightness Set input options.
 
 
@@ -101,11 +101,17 @@ PROJECTOR - toggles projector.
 
 BRIGHTNESS <value> - changes the ir brightness to <value> level which must be in 0-50 range.
 
+SWITCH <value> - change current device to kinect number <value> for multiple kinects. (-1 for next kinect)
+
+LOOP <value> - beginning of a loop for <value> times.
+
+END - end of a loop.
+
 
 ------------------------------
 Capturing data through program
 ------------------------------
-To capture all the depth, rgb and ir images, all the required modes need to be captured. e.g. in 640X480 resolution, one must capture both mode 1/2 (for depth and rgb) and mode 3 (for depth and ir) as in the demo program below.
+For example to capture all the depth, rgb and ir images, all the required modes need to be captured. e.g. in 640X480 resolution, one must capture both mode 1/2 (for depth and rgb) and mode 3 (for depth and ir) as in the demo program below.
 
 % this a demo program to capture all data
 

@@ -15,6 +15,9 @@
     <keyword>PAUSE</keyword>
     <keyword>PROJECTOR</keyword>
     <keyword>BRIGHTNESS</keyword>
+    <keyword>SWITCH</keyword>
+    <keyword>LOOP</keyword>
+	<keyword>END</keyword>
     <keyword>MODE</keyword>
     <keyword>CAPTURE</keyword>
 </keyword-list>
