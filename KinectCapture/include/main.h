@@ -94,10 +94,12 @@ static void run_comm_stop();
 static void run_comm_capture();
 static void run_comm_save();
 static void run_comm_projector();
+static void run_comm_end();
 
 static void run_comm_pause_with_arg(int arg);
 static void run_comm_brightness_with_arg(int arg);
 static void run_comm_switch_with_arg(int arg);
+static void run_comm_loop_with_arg(int arg);
 
 static void *freenect_threadfunc(void *arg);
 

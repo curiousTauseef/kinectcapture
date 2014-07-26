@@ -31,8 +31,11 @@ const char commandstring[NUM_CODEWORDS][24] =
     "CAPTURE", /* 4 */
     "SAVE", /* 5 */
     "PROJECTOR", /* 6 */
-    "PAUSE", /* 7 */
-    "BRIGHTNESS" /* 8 */
+    "END", /* 7 */
+    "PAUSE", /* 8 */
+    "BRIGHTNESS", /* 9 */
+    "SWITCH", /* 10 */
+    "LOOP", /* 11 */
 };
 
 pcode codes;
@@ -87,6 +90,7 @@ int mat_read_word(FILEPOINTER fp, char *c_word)
 int getcodenum(const char *str)
 {
     int c = 0, i;
+
     for(i=0; i<NUM_CODEWORDS; i++)
     {
         if(strcmp(str, commandstring[i])==0)
@@ -95,6 +99,7 @@ int getcodenum(const char *str)
             break;
         }
     }
+    printf("NC: %d (%s)\n", c, str);
     return c;
 }
 
@@ -113,6 +118,7 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
         return pc;
     }
     c = getcodenum(c_word);
+    printf("C: %d\n", c);
     if(c==0) return pc;
     else
     {
@@ -134,8 +140,8 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
             pc.hasval = 0;
             pc.codenum = c;
             break;
-        case 7: /* pause */
-            pc.codenum = c+5;
+        case 8: /* pause */
+            pc.codenum = c+6;
             flag = mat_read_word(fp, c_word);
             c = strtol(c_word, NULL, 0);
             if(c<0)
@@ -146,8 +152,8 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
             pc.hasval = 1;
             pc.codeval = c;
             break;
-        case 8: /* brightness */
-            pc.codenum = c+5;
+        case 9: /* brightness */
+            pc.codenum = c+6;
 
             flag = mat_read_word(fp, c_word);
             c = strtol(c_word, NULL, 0);
@@ -159,10 +165,38 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
             pc.hasval = 1;
             pc.codeval = c;
             break;
+        case 10: /* switch */
+            pc.codenum = c+6;
+
+            flag = mat_read_word(fp, c_word);
+            c = strtol(c_word, NULL, 0);
+            if(c<-1)
+            {
+                pc.codenum = 0;
+                return pc;
+            }
+            pc.hasval = 1;
+            pc.codeval = c;
+            break;
+        case 11: /* loop */
+            pc.codenum = c+6;
+
+            flag = mat_read_word(fp, c_word);
+            c = strtol(c_word, NULL, 0);
+            if(c<0)
+            {
+                pc.codenum = 0;
+                return pc;
+            }
+            pc.hasval = 1;
+            pc.codeval = c;
+            break;
         default:
             pc.codenum = c+5;
         }
     }
+    printf("CODENUM: %d++\n", pc.codenum);
+
     return pc;
 }
 
@@ -171,9 +205,11 @@ void load_program_code(const char *fname)
     int flag = 0, k = 0, ok = 0;
     pcodeword curr_cwd;
     FILEPOINTER fp = NULL;
+    DTYPE_STACK stck = NULL;
     codes.allocated = 0;
     codes.cwrds = NULL;
     codes.nlines = 0;
+    stck = dtype_stack_creat();
 
     if((fp = fopen(fname, "r"))!=NULL)
     {
@@ -184,6 +220,24 @@ void load_program_code(const char *fname)
             if(curr_cwd.codenum!=0)
             {
                 if(ok==0 && k==0 && curr_cwd.codenum==7) ok = 1;
+                if(ok==1 && curr_cwd.codenum==17)
+                {
+                    dtype tmp;
+                    tmp.first = codes.nlines;
+                    tmp.second = curr_cwd.codeval;
+                    dtype_stack_push(stck, tmp);
+                }
+                if(ok==1 && curr_cwd.codenum==12)
+                {
+                    if(dtype_stack_is_empty(stck))
+                    {
+                        /* bad looping */
+                        flag = 1;
+                        ok = 3;
+                    }
+                    else dtype_stack_pop(stck);
+                }
+
                 if(ok==1 && curr_cwd.codenum==8)
                 {
                     ok = 2;
@@ -197,7 +251,7 @@ void load_program_code(const char *fname)
             }
             else
             {
-                /* error*/
+                /* error */
                 flag = 1;
                 if(codes.allocated) free(codes.cwrds);
                 codes.allocated = 0;
@@ -207,6 +261,15 @@ void load_program_code(const char *fname)
         if(codes.allocated && ok!=2) /* incomplete code */
         {
             free(codes.cwrds);
+            codes.allocated = 0;
+            codes.nlines = 0;
+        }
+        else if(!dtype_stack_is_empty(stck) || ok==3) /* bad looping */
+        {
+            while(!dtype_stack_is_empty(stck)) dtype_stack_pop(stck);
+            dtype_stack_free(stck);
+            printf("Bad Looping\n");
+            if(codes.allocated) free(codes.cwrds);
             codes.allocated = 0;
             codes.nlines = 0;
         }
@@ -220,3 +283,4 @@ void unload_program_code()
     codes.allocated = 0;
     codes.nlines = 0;
 }
+

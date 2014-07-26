@@ -38,27 +38,29 @@ GtkWidget *drawing_area = NULL;
 typedef void (*CODE_LOOK_UP_TABLE)();
 CODE_LOOK_UP_TABLE code_look_up_table[13] =
 {
-    0, /* 0 not used */
+    NULL, /* 0 not used */
     run_comm_switch_mode_1,
     run_comm_switch_mode_2,
     run_comm_switch_mode_3,
     run_comm_switch_mode_4,
     run_comm_switch_mode_5,
     run_comm_switch_mode_6, /* mode 1-6 */
-    run_comm_start, /*  7 start code */
+    run_comm_start, /* 7 start code */
     run_comm_stop, /* 8 stop code */
     run_comm_capture, /* 9 capture code */
     run_comm_save, /* 10 save code */
-    run_comm_projector /* 11 projector code */
+    run_comm_projector, /* 11 projector code */
+    run_comm_end /* 12 loop end code */
 };
-
 
 typedef void (*CODE_LOOK_UP_TABLE_WITH_ARG)(int arg);
 CODE_LOOK_UP_TABLE_WITH_ARG code_look_up_table_with_arg[13] =
 {
-    0, /* not used */
-    run_comm_pause_with_arg, /* 12 pause code */
-    run_comm_brightness_with_arg, /* 13 brightness code */
+    NULL, /* not used */
+    run_comm_pause_with_arg, /* 14 pause code */
+    run_comm_brightness_with_arg, /* 15 brightness code */
+    run_comm_switch_with_arg, /* 16 switch code */
+    run_comm_loop_with_arg, /* 17 loop code */
 };
 
 struct program_capture_data
@@ -122,6 +124,11 @@ volatile int die = 0;
 int res = 0;
 long prog_th_id = 0;
 double hist_rgb[3][HIST_NUM_BARS], hist_ir[HIST_NUM_BARS];
+
+DTYPE_STACK prog_stck = NULL;
+dtype prog_tmp;
+DTYPE prog_tmp2 = NULL;
+int prog_k;
 
 pthread_mutex_t gl_backbuf_mutex = PTHREAD_MUTEX_INITIALIZER;
 uint8_t *depth_mid = NULL, *depth_front = NULL, *depth_mid_raw = NULL, *depth_front_raw = NULL;
@@ -260,7 +267,6 @@ int main(int argc, char *argv[])
     g_signal_connect(G_OBJECT(window), "delete_event", G_CALLBACK(delete_event), NULL);
     g_signal_connect(G_OBJECT(window), "key_press_event", G_CALLBACK(on_key_press), NULL);
 
-    gtk_widget_show(window);
     gtk_widget_set_sensitive(GTK_WIDGET(edit_rc), command_mode_enable);
     gtk_widget_set_sensitive(GTK_WIDGET(edit_rc_cmos), cmos_command_mode_enable);
     gtk_widget_set_sensitive(GTK_WIDGET(button_prog_run), program_mode_enable);
@@ -678,7 +684,7 @@ static int run_bright_command()
         if(num_of_words==1)
         {
             n = (uint16_t)strtol(command, NULL, 0);
-            if(n>=0 && n<=50)
+            if(n<=50)
             {
                 write_register_mine(f_dev, 0x15, n);
                 return 0;
@@ -701,12 +707,45 @@ static void *run_current_program_thread(void *x)
 {
     if(program_mode_enable==1 && codes.allocated==1)
     {
-        int k;
-        for(k=0; k<codes.nlines; k++)
+        prog_stck = dtype_stack_creat();
+        printf("------------------\nRUNNING\n------------------\n");
+        for(prog_k=0; prog_k<codes.nlines; ++prog_k)
         {
-            if(codes.cwrds[k].hasval) code_look_up_table_with_arg[codes.cwrds[k].codenum-(NUM_CODEWORDS+2)](codes.cwrds[k].codeval);
-            else code_look_up_table[codes.cwrds[k].codenum]();
-            run_comm_pause_with_arg(500);
+            printf("CODENUM: %d (VAL: %d)\n", codes.cwrds[prog_k].codenum, codes.cwrds[prog_k].codeval);
+
+            switch(codes.cwrds[prog_k].codenum)
+            {
+            case 7: /* start */
+                run_comm_start();
+                break;
+
+            case 8: /* stop */
+                run_comm_stop();
+                break;
+
+            case 17: /* loop */
+                run_comm_loop_with_arg(codes.cwrds[prog_k].codeval);
+                break;
+
+            case 12: /* end */
+                run_comm_end();
+                break;
+
+            default:
+                prog_tmp2 = dtype_stack_top(prog_stck);
+                if(prog_tmp2->second>=0)
+                {
+                    if(codes.cwrds[prog_k].hasval)
+                    {
+                        code_look_up_table_with_arg[codes.cwrds[prog_k].codenum-(NUM_CODEWORDS+1)](codes.cwrds[prog_k].codeval);
+                    }
+                    else
+                    {
+                        code_look_up_table[codes.cwrds[prog_k].codenum]();
+                    }
+                    run_comm_pause_with_arg(500);
+                }
+            }
         }
     }
     pthread_exit(NULL);
@@ -793,10 +832,16 @@ static void run_comm_start()
 {
     program_running = 1;
     gtk_widget_set_sensitive(GTK_WIDGET(button_prog_run), FALSE);
+    prog_tmp.first = prog_k;
+    prog_tmp.second = codes.cwrds[prog_k].codeval-1;
+    printf("Start - SP(PUSH): first: %d second: %d\n", prog_tmp.first, prog_tmp.second);
+    dtype_stack_push(prog_stck, prog_tmp);
 }
 
 static void run_comm_stop()
 {
+    dtype_stack_pop(prog_stck);
+    dtype_stack_free(prog_stck);
     program_running = 0;
     gtk_widget_set_sensitive(GTK_WIDGET(button_prog_run), TRUE);
 }
@@ -895,6 +940,20 @@ static void run_comm_projector()
     }
 }
 
+static void run_comm_end()
+{
+    prog_tmp2 = dtype_stack_top(prog_stck);
+    printf("SP(TOP): first: %d second: %d\n", prog_tmp2->first, prog_tmp2->second);
+    if(prog_tmp2->second<=0)
+    {
+        dtype_stack_pop(prog_stck);
+    }
+    else
+    {
+        --(prog_tmp2->second);
+        prog_k = prog_tmp2->first;
+    }
+}
 
 static void run_comm_pause_with_arg(int arg)
 {
@@ -917,18 +976,25 @@ static void run_comm_switch_with_arg(int arg)
     freenect_run();
 }
 
+static void run_comm_loop_with_arg(int arg)
+{
+    prog_tmp.first = prog_k;
+    prog_tmp.second = codes.cwrds[prog_k].codeval-1;
+    printf("SP(PUSH): first: %d second: %d\n", prog_tmp.first, prog_tmp.second);
+    dtype_stack_push(prog_stck, prog_tmp);
+}
+
 static void show_about(GtkWidget *widget, gpointer data)
 {
 
     GtkWidget *dialog = gtk_about_dialog_new();
     gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(dialog), "KinectCapture");
-    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "0.2");
-    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog),
-                                   "Copyright (c) 2014 Sk. Mohammadul Haque");
-    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog),
-                                  "KinectCapture is a software to view, capture raw Kinect data in different modes.");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "0.3");
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "Copyright (c) 2014 Sk. Mohammadul Haque");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "KinectCapture is a software to view, capture raw Kinect data in different modes.");
     gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "http://mohammadulhaque.alotspace.com");
-    gtk_dialog_run(GTK_DIALOG (dialog));
+    gtk_window_set_position (dialog, GTK_WIN_POS_CENTER);
+    gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
 
 }
@@ -936,7 +1002,6 @@ static void show_about(GtkWidget *widget, gpointer data)
 static void load_file(GtkWidget *widget, gpointer data)
 {
     GtkWidget *dialog = gtk_file_chooser_dialog_new("Open File", GTK_WINDOW(widget), GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
-
     if(gtk_dialog_run(GTK_DIALOG(dialog))==GTK_RESPONSE_ACCEPT)
     {
         char *filename;
@@ -953,12 +1018,12 @@ static void load_file(GtkWidget *widget, gpointer data)
 static void save_reg(GtkWidget *widget, gpointer data)
 {
     GtkWidget *dialog = gtk_file_chooser_dialog_new("Save File", GTK_WINDOW(widget), GTK_FILE_CHOOSER_ACTION_SAVE, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT, NULL);
-    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (dialog), TRUE);
     freenect_registration reg = freenect_copy_registration(f_dev);
+    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (dialog), TRUE);
     if(gtk_dialog_run(GTK_DIALOG(dialog))==GTK_RESPONSE_ACCEPT)
     {
-        FILE *fp;
-        char *filename;
+        FILE *fp = NULL;
+        char *filename = NULL;
         int i;
         GtkFileFilter *fnamefilter = gtk_file_filter_new();
         gtk_file_filter_set_name(fnamefilter, "Kinect Registration File");

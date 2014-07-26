@@ -3,8 +3,8 @@
 ** and with no warranty, express or implied, as to its usefulness for
 ** any purpose.
 **
-** program.h
-** Contains header declarations and definitions for progam.c.
+** datastructs.h
+** Contains header declarations and definitions for datastructs.c.
 **
 ** Author: Sk. Mohammadul Haque
 ** Copyright (c) 2014 Sk. Mohammadul Haque
@@ -19,35 +19,41 @@
 ** For more details and updates, visit http://mohammadulhaque.alotspace.com
 ** -------------------------------------------------------------------------*/
 
-#ifndef __PROGRAM__
-#define __PROGRAM__
+#ifndef __DATA_STRUCTS__
+#define __DATA_STRUCTS__
 
-#include "../include/strfuncs.h"
-#include "../include/datastructs.h"
+#include "commontypes.h"
+#include <stdio.h>
+#include <malloc.h>
+#define STACK_MAX 100
 
-#define NUM_CODEWORDS 12
+#define STACK_MALLOC 0
+#define STACK_EMPTY 1
 
-struct __pcordword
+struct dtype
 {
-    int codenum;
-    int codeval;
-    char hasval;
-    char iscomment;
+    int first;
+    int second;
 };
 
-typedef struct __pcordword pcodeword;
-struct __pcode
-{
-    int nlines;
-    int allocated;
-    pcodeword *cwrds;
-};
+typedef struct dtype dtype;
+typedef dtype* DTYPE;
 
-typedef struct __pcode pcode;
-extern pcode codes;
-int mat_read_word(FILEPOINTER fp, char *c_word);
-int getcodenum(const char *str);
-pcodeword parse_line_program_file(FILEPOINTER fp);
-void load_program_code(const char *fname);
-void unload_program_code();
+struct dtype_stack
+{
+    int p;
+    int length;
+    dtype *stack;
+};
+typedef struct dtype_stack dtype_stack;
+typedef struct dtype_stack *DTYPE_STACK;
+
+DTYPE_STACK dtype_stack_creat(void);
+int dtype_stack_free(DTYPE_STACK s);
+void dtype_stack_push(DTYPE_STACK s, dtype value);
+dtype dtype_stack_pop(DTYPE_STACK s);
+DTYPE dtype_stack_top(DTYPE_STACK s);
+int dtype_stack_is_empty(DTYPE_STACK s);
+int stack_error(int err_);
+
 #endif
