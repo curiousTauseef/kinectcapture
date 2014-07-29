@@ -987,7 +987,7 @@ static void show_about(GtkWidget *widget, gpointer data)
     gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "Copyright (c) 2014 Sk. Mohammadul Haque");
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "KinectCapture is a software to view, capture raw Kinect data in different modes.");
     gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "http://mohammadulhaque.alotspace.com");
-    gtk_window_set_position (dialog, GTK_WIN_POS_CENTER);
+    gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
 

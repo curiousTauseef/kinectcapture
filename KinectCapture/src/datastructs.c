@@ -27,7 +27,7 @@ DTYPE_STACK dtype_stack_creat(void)
     if((s = (DTYPE_STACK)malloc(sizeof(struct dtype_stack)))==NULL) stack_error(STACK_MALLOC);
     s->p = 0;
     s->length = STACK_MAX;
-    if((s->stack = (int*)malloc(sizeof(int)*(STACK_MAX)))==NULL) stack_error(STACK_MALLOC);
+    if((s->stack = (DTYPE)malloc(sizeof(dtype)*(STACK_MAX)))==NULL) stack_error(STACK_MALLOC);
     return s;
 }
 

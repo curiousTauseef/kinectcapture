@@ -25,6 +25,7 @@
 #include "commontypes.h"
 #include <stdio.h>
 #include <malloc.h>
+#include <stdlib.h>
 #define STACK_MAX 100
 
 #define STACK_MALLOC 0
