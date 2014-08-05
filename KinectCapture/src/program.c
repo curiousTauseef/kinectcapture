@@ -262,14 +262,13 @@ void load_program_code(const char *fname)
         }
         else if(!dtype_stack_is_empty(stck) || ok==3) /* bad looping */
         {
-            while(!dtype_stack_is_empty(stck)) dtype_stack_pop(stck);
-            dtype_stack_free(stck);
             if(codes.allocated) free(codes.cwrds);
             codes.allocated = 0;
             codes.nlines = 0;
         }
         fclose(fp);
     }
+    dtype_stack_free(stck);
 }
 
 void unload_program_code()

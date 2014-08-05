@@ -35,6 +35,7 @@ int dtype_stack_free(DTYPE_STACK s)
 {
     if (s==NULL) return 0;
     free(s->stack);
+    free(s);
     return 1;
 }
 

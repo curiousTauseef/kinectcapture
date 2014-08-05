@@ -26,7 +26,7 @@
 GtkWidget *window = NULL;
 GtkWidget *button_prog_run = NULL;
 GtkWidget *vbox_main = NULL, *hbox_iface = NULL;
-GtkWidget *menubar = NULL, *file_menu = NULL, *file_menu_item = NULL, *load_menu_item = NULL, *save_menu_item = NULL, *quit_menu_item = NULL, *help_menu = NULL, *help_menu_item = NULL, *about_menu_item = NULL;
+GtkWidget *menubar = NULL, *file_menu = NULL, *file_menu_item = NULL, *load_menu_item = NULL, *save_menu_item = NULL, *quit_menu_item = NULL, *settings_menu = NULL, *settings_menu_item = NULL, *save_path_menu_item = NULL, *help_menu = NULL, *help_menu_item = NULL, *about_menu_item = NULL;
 GtkWidget *check_rc = NULL, *text_rc = NULL, *edit_rc = NULL, *check_prog = NULL;
 GtkWidget *check_rc_cmos = NULL, *text_rc_cmos = NULL, *edit_rc_cmos = NULL;
 GtkWidget *check_bright = NULL, *text_bright = NULL, *edit_bright = NULL;
@@ -97,7 +97,9 @@ uint8_t histogram_enable = 0;
 uint8_t check_exposure_ir_enable = 0;
 int capturing_frame_number = -1;
 FILEPOINTER capture_file = NULL;
-char file_name[32];
+char file_name[256];
+char folder_name[256];
+
 const char hfstring[] = "FNK0";
 const char dispstring[8][32] =
 {
@@ -186,6 +188,14 @@ int main(int argc, char *argv[])
     gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), save_menu_item);
     gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), quit_menu_item);
 
+    settings_menu = gtk_menu_new();
+    settings_menu_item = gtk_menu_item_new_with_label("Settings");
+
+    save_path_menu_item = gtk_menu_item_new_with_label("Save Path");
+
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(settings_menu_item), settings_menu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), save_path_menu_item);
+
     help_menu = gtk_menu_new();
     help_menu_item = gtk_menu_item_new_with_label("Help");
 
@@ -196,12 +206,14 @@ int main(int argc, char *argv[])
     gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), about_menu_item);
 
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar), file_menu_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), settings_menu_item);
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar), help_menu_item);
     gtk_box_pack_start(GTK_BOX(vbox_main), menubar, FALSE, TRUE, 0);
 
     g_signal_connect_swapped(G_OBJECT(load_menu_item), "activate", G_CALLBACK(load_file), (gpointer)window);
     g_signal_connect_swapped(G_OBJECT(save_menu_item), "activate", G_CALLBACK(save_reg), (gpointer)window);
     g_signal_connect(G_OBJECT(quit_menu_item), "activate", G_CALLBACK(delete_event), NULL);
+    g_signal_connect_swapped(G_OBJECT(save_path_menu_item), "activate", G_CALLBACK(set_save_path), (gpointer)window);
     g_signal_connect_swapped(G_OBJECT(about_menu_item), "activate", G_CALLBACK(show_about), (gpointer)window);
 
     /* graphics area design */
@@ -874,7 +886,11 @@ static void run_comm_save()
 {
     if(prog_cap_data.is_saved==0)
     {
-        sprintf(file_name, "Frame%d.raw", capturing_frame_number);
+        #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
+        sprintf(file_name, "%s\\Frame%d.raw", folder_name, capturing_frame_number);
+        #else
+        sprintf(file_name, "%s/Frame%d.raw", folder_name, capturing_frame_number);
+        #endif
         if((capture_file = fopen(file_name,"wb"))!=NULL)
         {
             double dx, dy, dz;
@@ -1037,6 +1053,20 @@ static void save_reg(GtkWidget *widget, gpointer data)
     else gtk_widget_destroy(dialog);
 }
 
+static void set_save_path(GtkWidget *widget, gpointer data)
+{
+    GtkWidget *dialog = gtk_file_chooser_dialog_new("Select Folder", GTK_WINDOW(widget), GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
+    if(gtk_dialog_run(GTK_DIALOG(dialog))==GTK_RESPONSE_ACCEPT)
+    {
+        char *filename = NULL;
+        filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+        gtk_widget_destroy(dialog);
+        strcpy(folder_name, filename);
+        g_free(filename);
+    }
+    else gtk_widget_destroy(dialog);
+}
+
 static void update_status_text(const char *str, int cnum)
 {
     guint i = gtk_statusbar_get_context_id(GTK_STATUSBAR(statusbr), "");
@@ -1044,6 +1074,32 @@ static void update_status_text(const char *str, int cnum)
     gtk_statusbar_pop(GTK_STATUSBAR(statusbr), i);
     gtk_statusbar_push(GTK_STATUSBAR(statusbr), i, statusbr_text);
 }
+
+static void update_frame_number()
+{
+    FILEPOINTER search_file = NULL;
+    char search_filename[256];
+    int i;
+    capturing_frame_number = -1;
+    do
+    {
+        if(search_file)
+        {
+            fclose(search_file);
+        }
+        ++capturing_frame_number;
+        #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
+        sprintf(search_filename, "%s\\Frame%d.raw", folder_name, capturing_frame_number);
+        #else
+        sprintf(search_filename, "%s/Frame%d.raw", folder_name, capturing_frame_number);
+        #endif
+        search_file = fopen(search_filename, "r");
+    }
+    while(search_file);
+    update_status_text(dispstring[capture_mode], capturing_frame_number);
+
+}
+
 
 static void draw_gl_scene()
 {
@@ -1168,7 +1224,11 @@ static void draw_gl_scene()
 
     if(frame_captured)
     {
-        sprintf(file_name, "Frame%d.raw", capturing_frame_number);
+        #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
+        sprintf(file_name, "%s\\Frame%d.raw", folder_name, capturing_frame_number);
+        #else
+        sprintf(file_name, "%s/Frame%d.raw", folder_name, capturing_frame_number);
+        #endif
         if((capture_file = fopen(file_name,"wb"))!=NULL)
         {
             double dx, dy, dz;
@@ -1592,9 +1652,8 @@ static void *freenect_threadfunc(void *arg)
 
 static int freenect_run()
 {
-    FILEPOINTER search_file = NULL;
-    char search_filename[32];
     int i;
+    float v;
     depth_mid = (uint8_t*)malloc(640*480*3);
     depth_mid_raw = (uint8_t*)malloc(640*480*3);
     depth_front = (uint8_t*)malloc(640*480*3);
@@ -1625,24 +1684,17 @@ static int freenect_run()
     prog_cap_data.format_ir = 255;
     prog_cap_data.resolution_ir = 255;
 
-    do
+    #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
+    sprintf(folder_name, "%s\\", getenv("HOMEPATH"));
+    #else
+    sprintf(folder_name, "%s/", getenv("HOME"));
+    #endif
+    update_frame_number();
+    for(i=0; i<2048; ++i)
     {
-        if(search_file)
-        {
-            fclose(search_file);
-        }
-        capturing_frame_number++;
-        sprintf(search_filename, "Frame%d.raw", capturing_frame_number);
-        search_file = fopen(search_filename, "r");
-    }
-    while(search_file);
-    update_status_text(dispstring[capture_mode], capturing_frame_number);
-
-    for(i=0; i<2048; i++)
-    {
-        float v = i/2048.0;
+        v = i/2048.0;
         v = powf(v, 3)* 6;
-        t_gamma[i] = v*6*256;
+        t_gamma[i] = (uint16_t)(v*1536.0);
     }
 
     if(freenect_init(&f_ctx, NULL)<0)

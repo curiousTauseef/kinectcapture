@@ -73,10 +73,12 @@ static void resize_gl_scene(int width, int height);
 static void show_about(GtkWidget *widget, gpointer data);
 static void load_file(GtkWidget *widget, gpointer data);
 static void save_reg(GtkWidget *widget, gpointer data);
+static void set_save_path(GtkWidget *widget, gpointer data);
 
 static int freenect_run();
 
 static void update_status_text(const char *str, int cnum);
+static void update_frame_number();
 static int run_register_command();
 static int run_register_cmos_command();
 static int run_bright_command();
