@@ -1062,6 +1062,7 @@ static void set_save_path(GtkWidget *widget, gpointer data)
         filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
         gtk_widget_destroy(dialog);
         strcpy(folder_name, filename);
+        update_frame_number();
         g_free(filename);
     }
     else gtk_widget_destroy(dialog);
@@ -1079,7 +1080,6 @@ static void update_frame_number()
 {
     FILEPOINTER search_file = NULL;
     char search_filename[256];
-    int i;
     capturing_frame_number = -1;
     do
     {
