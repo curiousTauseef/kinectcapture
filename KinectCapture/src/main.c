@@ -887,9 +887,9 @@ static void run_comm_save()
     if(prog_cap_data.is_saved==0)
     {
         #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
-        sprintf(file_name, "%s\\Frame%d.raw", folder_name, capturing_frame_number);
+        sprintf(file_name, "%s\\Frame%d.fnk", folder_name, capturing_frame_number);
         #else
-        sprintf(file_name, "%s/Frame%d.raw", folder_name, capturing_frame_number);
+        sprintf(file_name, "%s/Frame%d.fnk", folder_name, capturing_frame_number);
         #endif
         if((capture_file = fopen(file_name,"wb"))!=NULL)
         {
@@ -999,7 +999,7 @@ static void show_about(GtkWidget *widget, gpointer data)
 
     GtkWidget *dialog = gtk_about_dialog_new();
     gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(dialog), "KinectCapture");
-    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "0.3");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "0.3.1");
     gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "Copyright (c) 2014 Sk. Mohammadul Haque");
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "KinectCapture is a software to view, capture raw Kinect data in different modes.");
     gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "http://mohammadulhaque.alotspace.com");
@@ -1089,9 +1089,9 @@ static void update_frame_number()
         }
         ++capturing_frame_number;
         #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
-        sprintf(search_filename, "%s\\Frame%d.raw", folder_name, capturing_frame_number);
+        sprintf(search_filename, "%s\\Frame%d.fnk", folder_name, capturing_frame_number);
         #else
-        sprintf(search_filename, "%s/Frame%d.raw", folder_name, capturing_frame_number);
+        sprintf(search_filename, "%s/Frame%d.fnk", folder_name, capturing_frame_number);
         #endif
         search_file = fopen(search_filename, "r");
     }
@@ -1225,9 +1225,9 @@ static void draw_gl_scene()
     if(frame_captured)
     {
         #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
-        sprintf(file_name, "%s\\Frame%d.raw", folder_name, capturing_frame_number);
+        sprintf(file_name, "%s\\Frame%d.fnk", folder_name, capturing_frame_number);
         #else
-        sprintf(file_name, "%s/Frame%d.raw", folder_name, capturing_frame_number);
+        sprintf(file_name, "%s/Frame%d.fnk", folder_name, capturing_frame_number);
         #endif
         if((capture_file = fopen(file_name,"wb"))!=NULL)
         {
