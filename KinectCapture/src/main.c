@@ -23,7 +23,7 @@
 #include "../include/main.h"
 #include "../include/program.h"
 
-GtkWidget *window = NULL, *cndlg = NULL;
+GtkWidget *window = NULL;
 GtkWidget *button_prog_run = NULL;
 GtkWidget *vbox_main = NULL, *hbox_iface = NULL;
 GtkWidget *menubar = NULL, *file_menu = NULL, *file_menu_item = NULL, *load_menu_item = NULL, *save_menu_item = NULL, *quit_menu_item = NULL, *settings_menu = NULL, *settings_menu_item = NULL, *save_path_menu_item = NULL, *help_menu = NULL, *help_menu_item = NULL, *about_menu_item = NULL;
@@ -100,7 +100,7 @@ FILEPOINTER capture_file = NULL;
 char file_name[256];
 char folder_name[256];
 
-const char hfstring[] = "FNK1";
+const char hfstring[] = "FNK0";
 const char dispstring[8][32] =
 {
     "",
@@ -123,7 +123,7 @@ const int mode_look_up_table[3][6] =
 int capture_mode = 1;
 pthread_t freenect_thread;
 volatile int die = 0;
-int res = 0, initflag = 0;
+int res = 0;
 long prog_th_id = 0;
 double hist_rgb[3][HIST_NUM_BARS], hist_ir[HIST_NUM_BARS];
 
@@ -551,7 +551,7 @@ static void program_mode_change(GtkToggleButton *button)
     {
         prog_cap_data.data_ir = (uint8_t*)malloc(freenect_find_video_mode(requested_resolution, requested_format).bytes);
         prog_cap_data.data_rgb = (uint8_t*)malloc(freenect_find_video_mode(requested_resolution, requested_format).bytes);
-        prog_cap_data.data_depth = (uint8_t*)malloc(640*480*2);
+        prog_cap_data.data_depth = (uint8_t*)malloc(640*480*3);
         switch(capture_mode)
         {
         case 1:
@@ -863,7 +863,7 @@ static void run_comm_capture()
         prog_cap_data.resolution_rgb = current_resolution;
         prog_cap_data.format_rgb = current_format;
 
-        memcpy(prog_cap_data.data_depth, depth_front_raw, 640*480*2);
+        memcpy(prog_cap_data.data_depth, depth_front_raw, 640*480*3);
         memcpy(prog_cap_data.data_rgb, rgb_front, freenect_find_video_mode(current_resolution, current_format).bytes);
         pthread_mutex_unlock(&prog_save_mtx);
         prog_cap_data.is_depth = 1;
@@ -886,11 +886,11 @@ static void run_comm_save()
 {
     if(prog_cap_data.is_saved==0)
     {
-#if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
+        #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
         sprintf(file_name, "%s\\Frame%d.fnk", folder_name, capturing_frame_number);
-#else
+        #else
         sprintf(file_name, "%s/Frame%d.fnk", folder_name, capturing_frame_number);
-#endif
+        #endif
         if((capture_file = fopen(file_name,"wb"))!=NULL)
         {
             double dx, dy, dz;
@@ -918,7 +918,7 @@ static void run_comm_save()
                     fwrite(prog_cap_data.data_ir, sizeof(uint8_t), prog_cap_data.sz_ir[0]*prog_cap_data.sz_ir[1]*prog_cap_data.sz_ir[2]*2, capture_file); /* 10 bit */
                 }
             }
-            if(prog_cap_data.is_depth) fwrite(prog_cap_data.data_depth, sizeof(uint8_t), 640*480*2, capture_file);
+            if(prog_cap_data.is_depth) fwrite(prog_cap_data.data_depth, sizeof(uint8_t), 640*480*3, capture_file);
 
             /* store accelerometer */
             state = freenect_get_tilt_state(f_dev);
@@ -999,7 +999,7 @@ static void show_about(GtkWidget *widget, gpointer data)
 
     GtkWidget *dialog = gtk_about_dialog_new();
     gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(dialog), "KinectCapture");
-    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "0.3.2");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "0.3.1");
     gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "Copyright (c) 2014 Sk. Mohammadul Haque");
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "KinectCapture is a software to view, capture raw Kinect data in different modes.");
     gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "http://mohammadulhaque.alotspace.com");
@@ -1088,11 +1088,11 @@ static void update_frame_number()
             fclose(search_file);
         }
         ++capturing_frame_number;
-#if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
+        #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
         sprintf(search_filename, "%s\\Frame%d.fnk", folder_name, capturing_frame_number);
-#else
+        #else
         sprintf(search_filename, "%s/Frame%d.fnk", folder_name, capturing_frame_number);
-#endif
+        #endif
         search_file = fopen(search_filename, "r");
     }
     while(search_file);
@@ -1107,192 +1107,189 @@ static void draw_gl_scene()
     uint8_t *tmp;
     uint16_t curr_val;
     freenect_frame_mode frame_mode;
-    if(initflag==1)
+    pthread_mutex_lock(&gl_backbuf_mutex);
+    if(current_format==FREENECT_VIDEO_YUV_RGB)
     {
-        pthread_mutex_lock(&gl_backbuf_mutex);
-        if(current_format==FREENECT_VIDEO_YUV_RGB)
-        {
-            while(!got_depth && !got_rgb) pthread_cond_wait(&gl_frame_cond, &gl_backbuf_mutex);
-        }
-        else
-        {
-            while((!got_depth||!got_rgb) && requested_format!=current_format) pthread_cond_wait(&gl_frame_cond, &gl_backbuf_mutex);
-        }
-        if(requested_format!=current_format || requested_resolution != current_resolution)
-        {
-            pthread_mutex_unlock(&gl_backbuf_mutex);
-            return;
-        }
-
-        if(got_depth)
-        {
-            pthread_mutex_lock(&prog_save_mtx);
-            tmp = depth_front;
-            depth_front = depth_mid;
-            depth_mid = tmp;
-            tmp = depth_front_raw;
-            depth_front_raw = depth_mid_raw;
-            pthread_mutex_unlock(&prog_save_mtx);
-            depth_mid_raw = tmp;
-            got_depth = 0;
-        }
-
-        if(got_rgb)
-        {
-            pthread_mutex_lock(&prog_save_mtx);
-            tmp = rgb_front;
-            rgb_front = rgb_mid;
-            pthread_mutex_unlock(&prog_save_mtx);
-            rgb_mid = tmp;
-            got_rgb = 0;
-        }
+        while(!got_depth && !got_rgb) pthread_cond_wait(&gl_frame_cond, &gl_backbuf_mutex);
+    }
+    else
+    {
+        while((!got_depth||!got_rgb) && requested_format!=current_format) pthread_cond_wait(&gl_frame_cond, &gl_backbuf_mutex);
+    }
+    if(requested_format!=current_format || requested_resolution != current_resolution )
+    {
         pthread_mutex_unlock(&gl_backbuf_mutex);
+        return;
+    }
 
-        glBindTexture(GL_TEXTURE_2D, gl_depth_tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, 3, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, depth_front);
+    if(got_depth)
+    {
+        pthread_mutex_lock(&prog_save_mtx);
+        tmp = depth_front;
+        depth_front = depth_mid;
+        depth_mid = tmp;
+        tmp = depth_front_raw;
+        depth_front_raw = depth_mid_raw;
+        pthread_mutex_unlock(&prog_save_mtx);
+        depth_mid_raw = tmp;
+        got_depth = 0;
+    }
 
-        glBegin(GL_TRIANGLE_FAN);
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        glTexCoord2f(0, 0);
-        glVertex3f(0, 0, 0);
-        glTexCoord2f(1, 0);
-        glVertex3f((DRAWING_AREA_WIDTH/2), 0, 0);
-        glTexCoord2f(1, 1);
-        glVertex3f((DRAWING_AREA_WIDTH/2), DRAWING_AREA_HEIGHT, 0);
-        glTexCoord2f(0, 1);
-        glVertex3f(0, DRAWING_AREA_HEIGHT, 0);
-        glEnd();
-        if(check_exposure_ir_enable==1 && (capture_mode==3 || capture_mode==5 ||capture_mode==6)) check_exposure_ir();
+    if(got_rgb)
+    {
+        pthread_mutex_lock(&prog_save_mtx);
+        tmp = rgb_front;
+        rgb_front = rgb_mid;
+        pthread_mutex_unlock(&prog_save_mtx);
+        rgb_mid = tmp;
+        got_rgb = 0;
+    }
+    pthread_mutex_unlock(&gl_backbuf_mutex);
+
+    glBindTexture(GL_TEXTURE_2D, gl_depth_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, depth_front);
+
+    glBegin(GL_TRIANGLE_FAN);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glTexCoord2f(0, 0);
+    glVertex3f(0, 0, 0);
+    glTexCoord2f(1, 0);
+    glVertex3f((DRAWING_AREA_WIDTH/2), 0, 0);
+    glTexCoord2f(1, 1);
+    glVertex3f((DRAWING_AREA_WIDTH/2), DRAWING_AREA_HEIGHT, 0);
+    glTexCoord2f(0, 1);
+    glVertex3f(0, DRAWING_AREA_HEIGHT, 0);
+    glEnd();
+    if(check_exposure_ir_enable==1 && (capture_mode==3 || capture_mode==5 ||capture_mode==6)) check_exposure_ir();
+    else
+    {
+        frame_mode = freenect_get_current_video_mode(f_dev);
+        glBindTexture(GL_TEXTURE_2D, gl_rgb_tex);
+        if(current_format==FREENECT_VIDEO_IR_10BIT) /* use exposure_pixels to display 10bit IR image correctly*/
+        {
+            total_pixels = freenect_find_video_mode(current_resolution, current_format).bytes;
+            total_pixels /= 2;
+            memset(exposure_pixels, 0, total_pixels*3);
+            for(k=0; k<total_pixels; ++k)
+            {
+                curr_val = (*((uint16_t*)(rgb_front+2*k)));
+                memset(exposure_pixels+3*k, curr_val/4, 3);
+            }
+            glTexImage2D(GL_TEXTURE_2D, 0, 3, frame_mode.width, frame_mode.height, 0, GL_RGB, GL_UNSIGNED_BYTE, exposure_pixels);
+            glBegin(GL_TRIANGLE_FAN);
+            glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+            glTexCoord2f(0, 0);
+            glVertex3f((DRAWING_AREA_WIDTH/2), 0, 0);
+            glTexCoord2f(1, 0);
+            glVertex3f(DRAWING_AREA_WIDTH, 0, 0);
+            glTexCoord2f(1, 1);
+            glVertex3f(DRAWING_AREA_WIDTH, DRAWING_AREA_HEIGHT, 0);
+            glTexCoord2f(0, 1);
+            glVertex3f((DRAWING_AREA_WIDTH/2), DRAWING_AREA_HEIGHT, 0);
+            glEnd();
+        }
         else
         {
-            frame_mode = freenect_get_current_video_mode(f_dev);
-            glBindTexture(GL_TEXTURE_2D, gl_rgb_tex);
-            if(current_format==FREENECT_VIDEO_IR_10BIT) /* use exposure_pixels to display 10bit IR image correctly*/
-            {
-                total_pixels = freenect_find_video_mode(current_resolution, current_format).bytes;
-                total_pixels /= 2;
-                memset(exposure_pixels, 0, total_pixels*3);
-                for(k=0; k<total_pixels; ++k)
-                {
-                    curr_val = (*((uint16_t*)(rgb_front+2*k)));
-                    memset(exposure_pixels+3*k, curr_val/4, 3);
-                }
-                glTexImage2D(GL_TEXTURE_2D, 0, 3, frame_mode.width, frame_mode.height, 0, GL_RGB, GL_UNSIGNED_BYTE, exposure_pixels);
-                glBegin(GL_TRIANGLE_FAN);
-                glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-                glTexCoord2f(0, 0);
-                glVertex3f((DRAWING_AREA_WIDTH/2), 0, 0);
-                glTexCoord2f(1, 0);
-                glVertex3f(DRAWING_AREA_WIDTH, 0, 0);
-                glTexCoord2f(1, 1);
-                glVertex3f(DRAWING_AREA_WIDTH, DRAWING_AREA_HEIGHT, 0);
-                glTexCoord2f(0, 1);
-                glVertex3f((DRAWING_AREA_WIDTH/2), DRAWING_AREA_HEIGHT, 0);
-                glEnd();
-            }
+            if(current_format==FREENECT_VIDEO_RGB || current_format==FREENECT_VIDEO_YUV_RGB)
+                glTexImage2D(GL_TEXTURE_2D, 0, 3, frame_mode.width, frame_mode.height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb_front);
             else
-            {
-                if(current_format==FREENECT_VIDEO_RGB || current_format==FREENECT_VIDEO_YUV_RGB)
-                    glTexImage2D(GL_TEXTURE_2D, 0, 3, frame_mode.width, frame_mode.height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb_front);
-                else
-                    glTexImage2D(GL_TEXTURE_2D, 0, 1, frame_mode.width, frame_mode.height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, rgb_front);
-                glBegin(GL_TRIANGLE_FAN);
-                glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-                glTexCoord2f(0, 0);
-                glVertex3f((DRAWING_AREA_WIDTH/2), 0, 0);
-                glTexCoord2f(1, 0);
-                glVertex3f(DRAWING_AREA_WIDTH, 0, 0);
-                glTexCoord2f(1, 1);
-                glVertex3f(DRAWING_AREA_WIDTH, DRAWING_AREA_HEIGHT, 0);
-                glTexCoord2f(0, 1);
-                glVertex3f((DRAWING_AREA_WIDTH/2), DRAWING_AREA_HEIGHT, 0);
-                glEnd();
-            }
+                glTexImage2D(GL_TEXTURE_2D, 0, 1, frame_mode.width, frame_mode.height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, rgb_front);
+            glBegin(GL_TRIANGLE_FAN);
+            glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+            glTexCoord2f(0, 0);
+            glVertex3f((DRAWING_AREA_WIDTH/2), 0, 0);
+            glTexCoord2f(1, 0);
+            glVertex3f(DRAWING_AREA_WIDTH, 0, 0);
+            glTexCoord2f(1, 1);
+            glVertex3f(DRAWING_AREA_WIDTH, DRAWING_AREA_HEIGHT, 0);
+            glTexCoord2f(0, 1);
+            glVertex3f((DRAWING_AREA_WIDTH/2), DRAWING_AREA_HEIGHT, 0);
+            glEnd();
         }
-        if(histogram_enable==1)
+    }
+    if(histogram_enable==1)
+    {
+        if(capture_mode==1 ||capture_mode==2 ||capture_mode==4)
         {
-            if(capture_mode==1||capture_mode==2||capture_mode==4)
-            {
-                calc_histogram_rgb();
-                draw_histogram_rgb();
-            }
-            else
-            {
-                calc_histogram_ir();
-                draw_histogram_ir();
-            }
+            calc_histogram_rgb();
+            draw_histogram_rgb();
         }
-
-
-        if(frame_captured)
+        else
         {
-#if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
-            sprintf(file_name, "%s\\Frame%d.fnk", folder_name, capturing_frame_number);
-#else
-            sprintf(file_name, "%s/Frame%d.fnk", folder_name, capturing_frame_number);
-#endif
-            if((capture_file = fopen(file_name,"wb"))!=NULL)
-            {
-                double dx, dy, dz;
-                freenect_raw_tilt_state* state;
-                freenect_update_tilt_state(f_dev);
+            calc_histogram_ir();
+            draw_histogram_ir();
+        }
+    }
 
-                /* HEADER STARTS HERE */
-                fwrite(hfstring, sizeof(char), 4, capture_file); /* file format */
-                if(capture_mode==1 ||capture_mode==2 ||capture_mode==4) /* RGB mode */
+
+    if(frame_captured)
+    {
+        #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
+        sprintf(file_name, "%s\\Frame%d.fnk", folder_name, capturing_frame_number);
+        #else
+        sprintf(file_name, "%s/Frame%d.fnk", folder_name, capturing_frame_number);
+        #endif
+        if((capture_file = fopen(file_name,"wb"))!=NULL)
+        {
+            double dx, dy, dz;
+            freenect_raw_tilt_state* state;
+            freenect_update_tilt_state(f_dev);
+
+            /* HEADER STARTS HERE */
+            fwrite(hfstring, sizeof(char), 4, capture_file); /* file format */
+            if(capture_mode==1 ||capture_mode==2 ||capture_mode==4) /* RGB mode */
+            {
+                fputc((uint8_t)current_resolution, capture_file); /* current_rgb_resolution */
+                fputc((uint8_t)255, capture_file); /* current_ir_resolution */
+                fputc((uint8_t)current_format, capture_file); /* current_rgb_format */
+                fputc((uint8_t)255, capture_file); /* current_ir_format */
+                fputc((uint8_t)FREENECT_DEPTH_11BIT, capture_file); /* current_depth_format */
+                /* content format  | x | RGB | IR | Depth | */
+                fputc((char)(5), capture_file); /* current_content */
+            }
+            else /* IR mode */
+            {
+                fputc((uint8_t)255, capture_file); /* current_rgb_resolution */
+                fputc((uint8_t)current_resolution, capture_file); /* current_ir_resolution */
+                fputc((uint8_t)255, capture_file); /* current_rgb_format */
+                fputc((uint8_t)current_format, capture_file); /* current_ir_format */
+                if(capture_mode==5 || capture_mode==6)
                 {
-                    fputc((uint8_t)current_resolution, capture_file); /* current_rgb_resolution */
-                    fputc((uint8_t)255, capture_file); /* current_ir_resolution */
-                    fputc((uint8_t)current_format, capture_file); /* current_rgb_format */
-                    fputc((uint8_t)255, capture_file); /* current_ir_format */
-                    fputc((uint8_t)FREENECT_DEPTH_11BIT, capture_file); /* current_depth_format */
+                    fputc((uint8_t)255, capture_file); /* current_depth_format not required */
                     /* content format  | x | RGB | IR | Depth | */
-                    fputc((char)(5), capture_file); /* current_content */
+                    fputc((uint8_t)(2), capture_file); /* current_content */
                 }
-                else /* IR mode */
+                else
                 {
-                    fputc((uint8_t)255, capture_file); /* current_rgb_resolution */
-                    fputc((uint8_t)current_resolution, capture_file); /* current_ir_resolution */
-                    fputc((uint8_t)255, capture_file); /* current_rgb_format */
-                    fputc((uint8_t)current_format, capture_file); /* current_ir_format */
-                    if(capture_mode==5 || capture_mode==6)
-                    {
-                        fputc((uint8_t)255, capture_file); /* current_depth_format not required */
-                        /* content format  | x | RGB | IR | Depth | */
-                        fputc((uint8_t)(2), capture_file); /* current_content */
-                    }
-                    else
-                    {
-                        fputc((uint8_t)FREENECT_DEPTH_11BIT, capture_file); /* current_depth_format  is valid and required*/
-                        /* content format  | x | RGB | IR | Depth | */
-                        fputc((uint8_t)(3), capture_file); /* current_content */
-                    }
+                    fputc((uint8_t)FREENECT_DEPTH_11BIT, capture_file); /* current_depth_format  is valid and required*/
+                    /* content format  | x | RGB | IR | Depth | */
+                    fputc((uint8_t)(3), capture_file); /* current_content */
                 }
-                /* HEADER ENDS HERE */
-
-                if(capture_mode==3)
-                {
-                    /* to skip last 8 rows of 488X640 of IR image */
-                    fwrite(rgb_front, sizeof(uint8_t), 640*480, capture_file);
-                }
-                else fwrite(rgb_front, sizeof(uint8_t), freenect_find_video_mode(current_resolution, current_format).bytes, capture_file);
-                if(!(capture_mode==5 || capture_mode==6))
-                {
-                    fwrite(depth_front_raw, sizeof(uint8_t), 640*480*2, capture_file); /* write only when required */
-                }
-
-                /* store accelerometer */
-                state = freenect_get_tilt_state(f_dev);
-                freenect_get_mks_accel(state, &dx, &dy, &dz);
-                fwrite(&dx, sizeof(double), 1, capture_file);
-                fwrite(&dy, sizeof(double), 1, capture_file);
-                fwrite(&dz, sizeof(double), 1, capture_file);
-                fclose(capture_file);
-                update_status_text(dispstring[capture_mode], capturing_frame_number);
             }
-            capturing_frame_number++;
-            frame_captured = 0;
+            /* HEADER ENDS HERE */
+
+            if(capture_mode==3)
+            {
+                /* to skip last 8 rows of 488X640 of IR image */
+                fwrite(rgb_front, sizeof(uint8_t), 640*480, capture_file);
+            }
+            else fwrite(rgb_front, sizeof(uint8_t), freenect_find_video_mode(current_resolution, current_format).bytes, capture_file);
+            if(!(capture_mode==5 || capture_mode==6))
+            {
+                fwrite(depth_front_raw, sizeof(uint8_t), 640*480*3, capture_file); /* write only when required */
+            }
+
+            /* store accelerometer */
+            state = freenect_get_tilt_state(f_dev);
+            freenect_get_mks_accel(state, &dx, &dy, &dz);
+            fwrite(&dx, sizeof(double), 1, capture_file);
+            fwrite(&dy, sizeof(double), 1, capture_file);
+            fwrite(&dz, sizeof(double), 1, capture_file);
+            fclose(capture_file);
+            update_status_text(dispstring[capture_mode], capturing_frame_number);
         }
+        capturing_frame_number++;
+        frame_captured = 0;
     }
 }
 
@@ -1512,8 +1509,10 @@ static void depth_cb(freenect_device *dev, void *v_depth, uint32_t timestamp)
             depth_mid[3*i+2] = 0;
             break;
         }
-        depth_mid_raw[2*i+0] = depth[i] & 0xff;
-        depth_mid_raw[2*i+1] = (depth[i]>>8) & 7;
+        depth_mid_raw[3*i+0] = depth[i] & 0xff;
+        depth_mid_raw[3*i+1] = (depth[i]>>8) & 7;
+        depth_mid_raw[3*i+2] = 0;
+
     }
     got_depth++;
     pthread_cond_signal(&gl_frame_cond);
@@ -1655,11 +1654,10 @@ static int freenect_run()
 {
     int i;
     float v;
-    initflag = 0;
     depth_mid = (uint8_t*)malloc(640*480*3);
-    depth_mid_raw = (uint8_t*)malloc(640*480*2);
+    depth_mid_raw = (uint8_t*)malloc(640*480*3);
     depth_front = (uint8_t*)malloc(640*480*3);
-    depth_front_raw = (uint8_t*)malloc(640*480*2);
+    depth_front_raw = (uint8_t*)malloc(640*480*3);
     rgb_back = (uint8_t*)malloc(640*480*3);
     rgb_mid = (uint8_t*)malloc(640*480*3);
     rgb_front = (uint8_t*)malloc(640*480*3);
@@ -1686,49 +1684,40 @@ static int freenect_run()
     prog_cap_data.format_ir = 255;
     prog_cap_data.resolution_ir = 255;
 
-#if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
+    #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
     sprintf(folder_name, "%s\\", getenv("HOMEPATH"));
-#else
+    #else
     sprintf(folder_name, "%s/", getenv("HOME"));
-#endif
+    #endif
     update_frame_number();
     for(i=0; i<2048; ++i)
     {
         v = i/2048.0;
-        v = powf(v, 3)*6;
+        v = powf(v, 3)* 6;
         t_gamma[i] = (uint16_t)(v*1536.0);
     }
 
-    do
+    if(freenect_init(&f_ctx, NULL)<0)
     {
-        if(freenect_init(&f_ctx, NULL)>=0)
-        {
-            freenect_set_log_level(f_ctx, FREENECT_LOG_FATAL);
-            freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
-
-            nr_devices = freenect_num_devices(f_ctx);
-
-            if(nr_devices<1) freenect_shutdown(f_ctx);
-            else
-            {
-                if(freenect_open_device(f_ctx, &f_dev, user_device_number)<0) freenect_shutdown(f_ctx);
-                else initflag = 1;
-            }
-        }
-
-        if(initflag==0)
-        {
-            cndlg = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_YES_NO, "Could not connect to the Kinect Device. Retry?");
-            gtk_window_set_title(GTK_WINDOW(cndlg), "Device Connection Failure");
-            if(gtk_dialog_run(GTK_DIALOG(cndlg))==GTK_RESPONSE_NO)
-            {
-                return 1;
-            };
-            gtk_widget_destroy(cndlg);
-        }
-
+        return 1;
     }
-    while(initflag==0);
+
+    freenect_set_log_level(f_ctx, FREENECT_LOG_FATAL);
+    freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
+
+    nr_devices = freenect_num_devices(f_ctx);
+
+    if(nr_devices<1)
+    {
+        freenect_shutdown(f_ctx);
+        return 1;
+    }
+
+    if(freenect_open_device(f_ctx, &f_dev, user_device_number)<0)
+    {
+        freenect_shutdown(f_ctx);
+        return 1;
+    }
 
     res = pthread_create(&freenect_thread, NULL, freenect_threadfunc, NULL);
     if(res)
