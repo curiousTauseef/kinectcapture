@@ -38,9 +38,9 @@
 		<Linker>
 			<Add option="`pkg-config gtk+-2.0 --libs`" />
 			<Add option="`pkg-config --libs gtkglext-1.0`" />
-			<Add library="lib/libfreenect.a" />
-			<Add library="lib/libfreenect_sync.a" />
-			<Add library="/usr/lib/i386-linux-gnu/libusb-1.0.so" />
+			<Add library="lib\libfreenect.a" />
+			<Add library="lib\libfreenect_sync.a" />
+			<Add library="\usr\lib\i386-linux-gnu\libusb-1.0.so" />
 		</Linker>
 		<Unit filename="include/cameras.h" />
 		<Unit filename="include/commontypes.h" />
@@ -51,6 +51,10 @@
 		<Unit filename="include/main.h" />
 		<Unit filename="include/program.h" />
 		<Unit filename="include/strfuncs.h" />
+		<Unit filename="resources/KinectCapture.ico" />
+		<Unit filename="resources/resources.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
 		<Unit filename="src/datastructs.c">
 			<Option compilerVar="CC" />
 		</Unit>

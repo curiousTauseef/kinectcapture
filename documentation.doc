@@ -26,9 +26,12 @@ KinectCapture is a user-friendly modified freenect front-end software to capture
 ----------------
 Version History
 ----------------
+---0.3.2----
+Added new file format.
+Added waiting for device to connect.
 ---0.3.1----
-Added Settings Menu
-Fixed Memory Leaks
+Added Settings Menu.
+Fixed Memory Leaks.
 ----0.3-----
 Added multiple kinects support.
 Added looping in program mode.

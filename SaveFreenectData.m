@@ -94,7 +94,7 @@ if(nargin<2 ||isempty(RGBImage)), RGBImage = []; end
             
     fp = fopen(FileName, 'wb');
     if(fp~=-1)
-        fprintf(fp, 'FNK0');
+        fprintf(fp, 'FNK1');
         fprintf(fp, '%c', resolution_rgb);
         fprintf(fp, '%c', resolution_ir);
         fprintf(fp, '%c', format_rgb);
@@ -121,7 +121,7 @@ if(nargin<2 ||isempty(RGBImage)), RGBImage = []; end
         if(~isempty(sz_depth))
             DepthImage = permute(DepthImage, [2 1]);
             if(format_depth==0)
-                fwrite(fp, DepthImage, 'ubit24');
+                fwrite(fp, DepthImage, 'ubit16');
             end
         end;
         
