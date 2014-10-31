@@ -109,7 +109,7 @@ if(nargin<2 ||isempty(RGBImage)), RGBImage = []; end
             fwrite(fp, RGBImage, 'uint8');
         end;
         % write IR
-        if(~isempty(sz_rgb))
+        if(~isempty(sz_ir))
             IRImage = permute(IRImage, [2 1]);
             if(format_ir==3)
                 fwrite(fp, IRImage, 'uint16');
