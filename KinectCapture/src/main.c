@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
     drawing_area = gtk_drawing_area_new();
     gtk_widget_set_can_focus(GTK_WIDGET(drawing_area), TRUE);
     gtk_box_pack_start(GTK_BOX(vbox_main), drawing_area, TRUE, TRUE, 0);
-    gtk_widget_set_events(drawing_area, GDK_ALL_EVENTS_MASK);
+    gtk_widget_set_events(drawing_area, GDK_EXPOSURE_MASK);
 
     /* other interface design */
     hbox_iface = gtk_hbox_new(FALSE, 0);
