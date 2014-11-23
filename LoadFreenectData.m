@@ -180,10 +180,10 @@ if(fp~=-1)
         end
 
         if(bincontent(1,1)==1)
-			if(strcmp(fheader, 'FNK0'))
-				FData.DepthImage = (reshape(fread(fp, 640*480, 'ubit24'), [640 480]).');
+            if(strcmp(fheader, 'FNK0'))
+                FData.DepthImage = (reshape(fread(fp, 640*480, 'ubit24'), [640 480]).');
 			else
-				FData.DepthImage = (reshape(fread(fp, 640*480, 'ubit16'), [640 480]).');
+                FData.DepthImage = (reshape(fread(fp, 640*480, 'ubit16'), [640 480]).');
 			end;
             FData.DepthImage(FData.DepthImage==2047) = 0;
         end
