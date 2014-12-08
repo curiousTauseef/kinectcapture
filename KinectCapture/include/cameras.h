@@ -42,6 +42,8 @@ int freenect_camera_init(freenect_device *dev);
 int freenect_camera_teardown(freenect_device *dev);
 FREENECTAPI int write_register_mine(freenect_device *dev, uint16_t reg, uint16_t data);
 FREENECTAPI uint16_t read_register_mine(freenect_device *dev, uint16_t reg);
+/* The following two lines are added with the corresponding definitions differing from
+** the original ones only in the modifiers and names */
 FREENECTAPI uint16_t read_cmos_register_mine(freenect_device *dev, uint16_t reg);
 FREENECTAPI int write_cmos_register_mine(freenect_device *dev, uint16_t reg, uint16_t value);
 #endif
