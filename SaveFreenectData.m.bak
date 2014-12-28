@@ -120,7 +120,6 @@ if(nargin<2 ||isempty(RGBImage)), RGBImage = []; end
         % write depth
         if(~isempty(sz_depth))
             DepthImage = permute(DepthImage, [2 1]);
-            DepthImage(DepthImage==0) = 2047;
             if(format_depth==0)
                 fwrite(fp, DepthImage, 'ubit16');
             end
