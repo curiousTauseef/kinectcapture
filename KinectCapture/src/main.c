@@ -1715,21 +1715,6 @@ static int freenect_run()
             gtk_window_set_title(GTK_WINDOW(cndlg), "Device Connection Failure");
             if(gtk_dialog_run(GTK_DIALOG(cndlg))==GTK_RESPONSE_NO)
             {
-                if(program_mode_enable==1)
-                {
-                    free(prog_cap_data.data_rgb);
-                    free(prog_cap_data.data_ir);
-                    free(prog_cap_data.data_depth);
-                }
-                gtk_main_quit();
-                free(depth_mid);
-                free(depth_mid_raw);
-                free(depth_front);
-                free(depth_front_raw);
-                free(rgb_back);
-                free(rgb_mid);
-                free(rgb_front);
-                free(exposure_pixels);
                 gtk_widget_destroy(cndlg);
                 return 1;
             };
