@@ -247,7 +247,6 @@ int main(int argc, char *argv[])
     text_bright = gtk_label_new("(0-50):");
     edit_bright = gtk_entry_new_with_max_length(16);
 
-
     g_signal_connect(G_OBJECT(check_rc), "toggled", G_CALLBACK(command_mode_change), NULL);
     g_signal_connect(G_OBJECT(check_rc_cmos), "toggled", G_CALLBACK(cmos_command_mode_change), NULL);
     g_signal_connect(G_OBJECT(check_prog), "toggled", G_CALLBACK(program_mode_change), NULL);
@@ -285,6 +284,11 @@ int main(int argc, char *argv[])
     gtk_widget_set_sensitive(GTK_WIDGET(edit_bright), bright_mode_enable);
     gtk_widget_set_sensitive(GTK_WIDGET(load_menu_item), program_mode_enable);
 
+    gtk_widget_set_can_focus(GTK_WIDGET(edit_rc), TRUE);
+    gtk_widget_set_can_focus(GTK_WIDGET(edit_rc_cmos), TRUE);
+    gtk_widget_set_can_focus(GTK_WIDGET(edit_bright), TRUE);
+
+    gtk_widget_show(window);
     init_gl();
     gtk_widget_show_all(window);
     gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
@@ -512,18 +516,21 @@ static void command_mode_change(GtkToggleButton *button)
 {
     command_mode_enable = gtk_toggle_button_get_active(button);
     gtk_widget_set_sensitive(GTK_WIDGET(edit_rc), command_mode_enable);
+    gtk_widget_grab_focus(GTK_WIDGET(edit_rc));
 }
 
 static void cmos_command_mode_change(GtkToggleButton *button)
 {
     cmos_command_mode_enable = gtk_toggle_button_get_active(button);
     gtk_widget_set_sensitive(GTK_WIDGET(edit_rc_cmos), cmos_command_mode_enable);
+    gtk_widget_grab_focus(GTK_WIDGET(edit_rc_cmos));
 }
 
 static void bright_mode_change(GtkToggleButton *button)
 {
     bright_mode_enable = gtk_toggle_button_get_active(button);
     gtk_widget_set_sensitive(GTK_WIDGET(edit_bright), bright_mode_enable);
+    gtk_widget_grab_focus(GTK_WIDGET(edit_bright));
 }
 
 static void program_mode_change(GtkToggleButton *button)
@@ -764,22 +771,14 @@ static void *run_current_program_thread(void *x)
 static void run_comm_switch_mode_1()
 {
     /* switch to mode 1 640x480 RGB */
-    if(depth_on==0)
-    {
-        depth_on = 1;
-        freenect_start_depth(f_dev);
-    }
+    if(depth_on==0) depth_on = 1;
     requested_format = FREENECT_VIDEO_RGB;
     requested_resolution = FREENECT_RESOLUTION_MEDIUM;
 }
 
 static void run_comm_switch_mode_2()
 {
-    if(depth_on==0)
-    {
-        depth_on = 1;
-        freenect_start_depth(f_dev);
-    }
+    if(depth_on==0) depth_on = 1;
     /* switch to mode 2 640x480 YUV */
     requested_format = FREENECT_VIDEO_YUV_RGB;
     requested_resolution = FREENECT_RESOLUTION_MEDIUM;
@@ -788,11 +787,7 @@ static void run_comm_switch_mode_2()
 static void run_comm_switch_mode_3()
 {
     /* switch to mode 3 640x480 IR */
-    if(depth_on==0)
-    {
-        depth_on = 1;
-        freenect_start_depth(f_dev);
-    }
+    if(depth_on==0) depth_on = 1;
     requested_format = FREENECT_VIDEO_IR_8BIT;
     requested_resolution = FREENECT_RESOLUTION_MEDIUM;
 }
@@ -800,11 +795,7 @@ static void run_comm_switch_mode_3()
 static void run_comm_switch_mode_4()
 {
     /* switch to mode 4 1280x1024 RGB */
-    if(depth_on==0)
-    {
-        depth_on = 1;
-        freenect_start_depth(f_dev);
-    }
+    if(depth_on==0) depth_on = 1;
     requested_format = FREENECT_VIDEO_RGB;
     requested_resolution = FREENECT_RESOLUTION_HIGH;
 }
@@ -999,7 +990,7 @@ static void show_about(GtkWidget *widget, gpointer data)
 
     GtkWidget *dialog = gtk_about_dialog_new();
     gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(dialog), "KinectCapture");
-    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "0.3.2");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "0.3.3");
     gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "Copyright (c) 2014 Sk. Mohammadul Haque");
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "KinectCapture is a software to view, capture raw Kinect data in different modes.");
     gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "http://mohammadulhaque.alotspace.com");
@@ -1568,6 +1559,7 @@ static void *freenect_threadfunc(void *arg)
             frame_mode = freenect_get_current_video_mode(f_dev);
             current_resolution = frame_mode.resolution;
             current_format = frame_mode.video_format;
+
             capture_mode = mode_look_up_table[current_resolution][current_format];
             pthread_mutex_unlock(&gl_backbuf_mutex);
 
@@ -1636,6 +1628,7 @@ static void *freenect_threadfunc(void *arg)
                 }
             }
             freenect_start_video(f_dev);
+            if(capture_mode<5 && depth_on==1) freenect_start_depth(f_dev);
             projector_on = 1;
             update_status_text(dispstring[capture_mode], capturing_frame_number);
 
@@ -1722,6 +1715,22 @@ static int freenect_run()
             gtk_window_set_title(GTK_WINDOW(cndlg), "Device Connection Failure");
             if(gtk_dialog_run(GTK_DIALOG(cndlg))==GTK_RESPONSE_NO)
             {
+                if(program_mode_enable==1)
+                {
+                    free(prog_cap_data.data_rgb);
+                    free(prog_cap_data.data_ir);
+                    free(prog_cap_data.data_depth);
+                }
+                gtk_main_quit();
+                free(depth_mid);
+                free(depth_mid_raw);
+                free(depth_front);
+                free(depth_front_raw);
+                free(rgb_back);
+                free(rgb_mid);
+                free(rgb_front);
+                free(exposure_pixels);
+                gtk_widget_destroy(cndlg);
                 return 1;
             };
             gtk_widget_destroy(cndlg);

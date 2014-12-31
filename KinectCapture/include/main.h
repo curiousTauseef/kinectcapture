@@ -38,7 +38,6 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <GL/glu.h>
-#include <GL/glut.h>
 
 #if (defined _WINDOWS || defined WINDOWS)
 #include <windows.h>

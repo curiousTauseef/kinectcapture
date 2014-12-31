@@ -1,7 +1,7 @@
 MAINICON ICON "KinectCapture.ico"
 1 VERSIONINFO
-FILEVERSION     0,3,2,0
-PRODUCTVERSION  0,3,2,0
+FILEVERSION     0,3,3,0
+PRODUCTVERSION  0,3,3,0
 BEGIN
   BLOCK "StringFileInfo"
   BEGIN
@@ -9,12 +9,12 @@ BEGIN
     BEGIN
       VALUE "CompanyName", "Sk. Mohammadul Haque"
       VALUE "FileDescription", "KinectCapture"
-      VALUE "FileVersion", "0.3"
+      VALUE "FileVersion", "0.3.3"
       VALUE "InternalName", "KinectCapture"
       VALUE "LegalCopyright", "Sk.Mohammadul Haque"
       VALUE "OriginalFilename", "kinectcapture.exe"
       VALUE "ProductName", "KinectCapture"
-      VALUE "ProductVersion", "0.3"
+      VALUE "ProductVersion", "0.3.3"
     END
   END
 
