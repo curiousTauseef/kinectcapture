@@ -23,6 +23,7 @@
 #include "../include/main.h"
 #include "../include/program.h"
 
+
 GtkWidget *window = NULL, *cndlg = NULL;
 GtkWidget *button_prog_run = NULL;
 GtkWidget *vbox_main = NULL, *hbox_iface = NULL;
@@ -95,6 +96,8 @@ uint8_t program_mode_enable = 0;
 uint8_t program_running = 0;
 uint8_t histogram_enable = 0;
 uint8_t check_exposure_ir_enable = 0;
+uint8_t depth_changed = 0;
+
 int capturing_frame_number = -1;
 FILEPOINTER capture_file = NULL;
 char file_name[256];
@@ -161,6 +164,7 @@ uint16_t t_gamma[2048];
 
 int main(int argc, char *argv[])
 {
+
     gtk_init(&argc, &argv);
     gtk_gl_init(&argc, &argv);
 
@@ -246,6 +250,7 @@ int main(int argc, char *argv[])
 
     text_bright = gtk_label_new("(0-50):");
     edit_bright = gtk_entry_new_with_max_length(16);
+
 
     g_signal_connect(G_OBJECT(check_rc), "toggled", G_CALLBACK(command_mode_change), NULL);
     g_signal_connect(G_OBJECT(check_rc_cmos), "toggled", G_CALLBACK(cmos_command_mode_change), NULL);
@@ -581,7 +586,6 @@ static gboolean expose(GtkWidget *drawing_area, GdkEventExpose *event, gpointer 
 {
     GdkGLContext *glcontext = gtk_widget_get_gl_context(drawing_area);
     GdkGLDrawable *gldrawable = gtk_widget_get_gl_drawable(drawing_area);
-
     if(!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) g_assert_not_reached();
     draw_gl_scene();
     if(gdk_gl_drawable_is_double_buffered(gldrawable)) gdk_gl_drawable_swap_buffers(gldrawable);
@@ -647,7 +651,6 @@ static int run_register_command()
         char command[32], *next_word = NULL;
         int num_of_words = 0;
         uint16_t n1, n2;
-
         sprintf(command, "%s", gtk_entry_get_text(GTK_ENTRY(edit_rc)));
         mat_count_words_in_line(command, &num_of_words);
         if(num_of_words==2)
@@ -809,7 +812,7 @@ static void run_comm_switch_mode_5()
     {
         freenect_stop_depth(f_dev);
         memset(depth_mid, 0, 640*480*3); /* black out the depth camera */
-        got_depth++;
+        got_depth = 1;
         depth_on = 0;
     }
 }
@@ -823,7 +826,7 @@ static void run_comm_switch_mode_6()
     {
         freenect_stop_depth(f_dev);
         memset(depth_mid, 0, 640*480*3); /* black out the depth camera */
-        got_depth++;
+        got_depth = 1;
         depth_on = 0;
     }
 }
@@ -932,13 +935,13 @@ static void run_comm_projector()
         write_register_mine(f_dev, 0x105, 0xffff);
         write_register_mine(f_dev, 0x106, 0x0);
         memset(depth_mid, 0, 640*480*3); /* black out the depth camera */
-        got_depth++;
+        got_depth = 1;
         projector_on = 0;
     }
     else
     {
         write_register_mine(f_dev, 0x105, 0x0);
-        got_depth++;
+        got_depth = 1;
         projector_on = 1;
     }
 }
@@ -997,7 +1000,6 @@ static void show_about(GtkWidget *widget, gpointer data)
     gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
-
 }
 
 static void load_file(GtkWidget *widget, gpointer data)
@@ -1114,7 +1116,6 @@ static void draw_gl_scene()
             pthread_mutex_unlock(&gl_backbuf_mutex);
             return;
         }
-
         if(got_depth)
         {
             pthread_mutex_lock(&prog_save_mtx);
@@ -1127,7 +1128,6 @@ static void draw_gl_scene()
             depth_mid_raw = tmp;
             got_depth = 0;
         }
-
         if(got_rgb)
         {
             pthread_mutex_lock(&prog_save_mtx);
@@ -1213,8 +1213,6 @@ static void draw_gl_scene()
                 draw_histogram_ir();
             }
         }
-
-
         if(frame_captured)
         {
 #if defined(__WIN32) || defined(__WIN32__) ||defined(WIN32) || defined(WINNT)
@@ -1411,16 +1409,15 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
         {
             if(depth_on)
             {
-                freenect_stop_depth(f_dev);
-                memset(depth_mid, 0, 640*480*3); /* black out the depth camera */
-                got_depth++;
+                depth_changed = 1;
+                got_depth = 0;
                 depth_on = 0;
             }
             else
             {
                 if(capture_mode != mode_look_up_table[FREENECT_RESOLUTION_HIGH][FREENECT_VIDEO_IR_8BIT] && capture_mode != mode_look_up_table[FREENECT_RESOLUTION_HIGH][FREENECT_VIDEO_IR_10BIT])
                 {
-                    freenect_start_depth(f_dev);
+                    depth_changed = 1;
                     depth_on = 1;
                 }
             }
@@ -1506,7 +1503,7 @@ static void depth_cb(freenect_device *dev, void *v_depth, uint32_t timestamp)
         depth_mid_raw[2*i+0] = depth[i] & 0xff;
         depth_mid_raw[2*i+1] = (depth[i]>>8) & 7;
     }
-    got_depth++;
+    got_depth = 1;
     pthread_cond_signal(&gl_frame_cond);
     pthread_mutex_unlock(&gl_backbuf_mutex);
 }
@@ -1541,7 +1538,18 @@ static void *freenect_threadfunc(void *arg)
 
     while(!die && freenect_process_events(f_ctx)>=0)
     {
-        if(requested_format!=current_format ||requested_resolution!=current_resolution)
+        if(depth_changed==1)
+        {
+            if(depth_on==0)
+            {
+                freenect_stop_depth(f_dev);
+                memset(depth_mid, 0, 640*480*3); /* black out the depth camera */
+                got_depth = 1;
+            }
+            else freenect_start_depth(f_dev);
+            depth_changed = 0;
+        }
+        if(requested_format!=current_format||requested_resolution!=current_resolution)
         {
             freenect_frame_mode frame_mode;
             freenect_stop_video(f_dev);
@@ -1588,9 +1596,6 @@ static void *freenect_threadfunc(void *arg)
                 switch(capture_mode)
                 {
                 case 6:
-                    free(exposure_pixels);
-                    exposure_pixels = (uint8_t*)malloc(1280*1024*3);
-                    break;
                 case 5:
                     free(exposure_pixels);
                     exposure_pixels = (uint8_t*)malloc(1280*1024*3);
@@ -1609,11 +1614,6 @@ static void *freenect_threadfunc(void *arg)
                     switch(capture_mode)
                     {
                     case 6:
-                        prog_cap_data.sz_ir[0] = 1280;
-                        prog_cap_data.sz_ir[1] = 1024;
-                        prog_cap_data.sz_ir[2] = 1;
-                        break;
-
                     case 5:
                         prog_cap_data.sz_ir[0] = 1280;
                         prog_cap_data.sz_ir[1] = 1024;
@@ -1631,16 +1631,14 @@ static void *freenect_threadfunc(void *arg)
             if(capture_mode<5 && depth_on==1) freenect_start_depth(f_dev);
             projector_on = 1;
             update_status_text(dispstring[capture_mode], capturing_frame_number);
-
         }
+
     }
     freenect_set_led(f_dev, LED_OFF);
     freenect_stop_depth(f_dev);
     freenect_stop_video(f_dev);
-
     freenect_close_device(f_dev);
     freenect_shutdown(f_ctx);
-
     return NULL;
 }
 
@@ -1698,9 +1696,7 @@ static int freenect_run()
         {
             freenect_set_log_level(f_ctx, FREENECT_LOG_FATAL);
             freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
-
             nr_devices = freenect_num_devices(f_ctx);
-
             if(nr_devices<1) freenect_shutdown(f_ctx);
             else
             {
