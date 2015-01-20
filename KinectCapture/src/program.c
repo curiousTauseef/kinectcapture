@@ -191,6 +191,7 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
             break;
         default:
             pc.codenum = c+5;
+            pc.codeval = 1;
         }
     }
     return pc;
