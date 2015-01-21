@@ -31,22 +31,19 @@
 #define STACK_MALLOC 0
 #define STACK_EMPTY 1
 
-struct dtype
+typedef struct dtype
 {
     int first;
     int second;
-};
-
-typedef struct dtype dtype;
+} dtype;
 typedef dtype* DTYPE;
 
-struct dtype_stack
+typedef struct dtype_stack
 {
     int p;
     int length;
     dtype *stack;
-};
-typedef struct dtype_stack dtype_stack;
+} dtype_stack;
 typedef struct dtype_stack *DTYPE_STACK;
 
 DTYPE_STACK dtype_stack_creat(void);
