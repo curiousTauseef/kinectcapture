@@ -64,7 +64,7 @@ CODE_LOOK_UP_TABLE_WITH_ARG code_look_up_table_with_arg[13] =
     run_comm_loop_with_arg, /* 17 loop code */
 };
 
-struct program_capture_data
+typedef struct program_capture_data
 {
     char is_ir;
     char is_rgb;
@@ -81,9 +81,7 @@ struct program_capture_data
     uint8_t *data_ir;
     uint8_t *data_rgb;
     uint8_t *data_depth;
-};
-
-typedef struct program_capture_data program_capture_data;
+} program_capture_data;
 program_capture_data prog_cap_data;
 
 /* required for working */
