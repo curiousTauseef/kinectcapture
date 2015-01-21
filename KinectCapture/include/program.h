@@ -27,23 +27,21 @@
 
 #define NUM_CODEWORDS 12
 
-struct __pcordword
+typedef struct __pcordword
 {
     int codenum;
     int codeval;
     char hasval;
     char iscomment;
-};
+} pcodeword;
 
-typedef struct __pcordword pcodeword;
-struct __pcode
+typedef struct __pcode
 {
     int nlines;
     int allocated;
     pcodeword *cwrds;
-};
+} pcode;
 
-typedef struct __pcode pcode;
 extern pcode codes;
 int mat_read_word(FILEPOINTER fp, char *c_word);
 int getcodenum(const char *str);
