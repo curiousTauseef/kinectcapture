@@ -87,7 +87,7 @@ Capturing data through program
 For example to capture all the depth, rgb and ir images, all the required modes need to be captured. e.g. in 640X480 resolution, one must capture both mode 1/2 (for depth and rgb) and mode 3 (for depth and ir) as in the demo program below.
 
 > 
-% this a demo program to capture all data
+% this a demo program to capture all data  
 START  
 % change to mode 1  
 MODE 1  
