@@ -22,7 +22,7 @@
 #ifndef __STRFUNCS__
 #define __STRFUNCS__
 
-#if (!(defined _WINDOWS || defined WINDOWS ) && !(defined _BSD_SOURCE || defined _POSIX_C_SOURCE))
+#if(!(defined(_WIN32) || defined(WIN32)|| defined(_WINDOWS) || defined(WINDOWS)) && !(defined _BSD_SOURCE || defined _POSIX_C_SOURCE))
 #define _BSD_SOURCE
 #define _POSIX_C_SOURCE	199309L
 #endif
@@ -41,6 +41,6 @@ typedef FILE *FILEPOINTER;
 typedef struct _iobuf *FILEPOINTER;
 #endif
 
-char *mat_go_next_word(char *fp);
-int mat_count_words_in_line(const char *fp, int *count);
+char *kc_go_next_word(char *fp);
+int kc_count_words_in_line(const char *fp, int *count);
 #endif

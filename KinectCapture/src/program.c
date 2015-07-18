@@ -40,7 +40,7 @@ const char commandstring[NUM_CODEWORDS][24] =
 
 pcode codes;
 
-int mat_read_word(FILEPOINTER fp, char *c_word)
+int kc_read_word(FILEPOINTER fp, char *c_word)
 {
     int flag = 0, t = 0, comment_flag = 0;
     char ch = 0;
@@ -110,7 +110,7 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
     pc.codenum = 0;
     pc.hasval = 0;
     pc.iscomment = 0;
-    flag = mat_read_word(fp, c_word);
+    flag = kc_read_word(fp, c_word);
     if(flag==2)
     {
         pc.iscomment = 1;
@@ -128,7 +128,7 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
         switch(c)
         {
         case 1: /* mode */
-            flag = mat_read_word(fp, c_word);
+            flag = kc_read_word(fp, c_word);
             c = strtol(c_word, NULL, 0);
             if(c<1 || c>6)
             {
@@ -140,7 +140,7 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
             break;
         case 8: /* pause */
             pc.codenum = c+6;
-            flag = mat_read_word(fp, c_word);
+            flag = kc_read_word(fp, c_word);
             c = strtol(c_word, NULL, 0);
             if(c<0)
             {
@@ -153,7 +153,7 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
         case 9: /* brightness */
             pc.codenum = c+6;
 
-            flag = mat_read_word(fp, c_word);
+            flag = kc_read_word(fp, c_word);
             c = strtol(c_word, NULL, 0);
             if(c<0 || c>50)
             {
@@ -166,7 +166,7 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
         case 10: /* switch */
             pc.codenum = c+6;
 
-            flag = mat_read_word(fp, c_word);
+            flag = kc_read_word(fp, c_word);
             c = strtol(c_word, NULL, 0);
             if(c<-1)
             {
@@ -179,7 +179,7 @@ pcodeword parse_line_program_file(FILEPOINTER fp)
         case 11: /* loop */
             pc.codenum = c+6;
 
-            flag = mat_read_word(fp, c_word);
+            flag = kc_read_word(fp, c_word);
             c = strtol(c_word, NULL, 0);
             if(c<0)
             {

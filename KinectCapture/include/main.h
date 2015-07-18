@@ -39,12 +39,12 @@
 #include <GL/glext.h>
 #include <GL/glu.h>
 
-#if (defined _WINDOWS || defined WINDOWS)
+#if(defined(_WIN32) || defined(WIN32)|| defined(_WINDOWS) || defined(WINDOWS))
 #include <windows.h>
-#define mat_sleep(x) Sleep((x)*1000)
+#define kc_sleep(x) Sleep((x))
 #else
 #include <unistd.h>
-#define mat_sleep(x) usleep((x)*1000)
+#define kc_sleep(x) usleep((x)*1000)
 #endif
 
 static void clear_all_data();
@@ -103,6 +103,7 @@ static void run_comm_switch_with_arg(int arg);
 static void run_comm_loop_with_arg(int arg);
 
 static void *freenect_threadfunc(void *arg);
+static void initialize_all_data();
 
 #define DRAWING_AREA_WIDTH 1280
 #define DRAWING_AREA_HEIGHT 480

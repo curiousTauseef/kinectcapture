@@ -95,6 +95,7 @@ uint8_t program_running = 0;
 uint8_t histogram_enable = 0;
 uint8_t check_exposure_ir_enable = 0;
 uint8_t depth_changed = 0;
+uint8_t depth_running = 0;
 
 int capturing_frame_number = -1;
 FILEPOINTER capture_file = NULL;
@@ -351,6 +352,7 @@ gint delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
     free(rgb_mid);
     free(rgb_front);
     free(exposure_pixels);
+    if(initflag==1) freenect_shutdown(f_ctx);
     return FALSE;
 }
 
@@ -650,11 +652,11 @@ static int run_register_command()
         int num_of_words = 0;
         uint16_t n1, n2;
         sprintf(command, "%s", gtk_entry_get_text(GTK_ENTRY(edit_rc)));
-        mat_count_words_in_line(command, &num_of_words);
+        kc_count_words_in_line(command, &num_of_words);
         if(num_of_words==2)
         {
             n1 = (uint16_t)strtol(command, NULL, 0);
-            next_word = mat_go_next_word(command);
+            next_word = kc_go_next_word(command);
             if(next_word!=NULL)
             {
                 n2 = (uint16_t)strtol(next_word, NULL, 0);
@@ -675,11 +677,11 @@ static int run_register_cmos_command()
         uint16_t n1, n2;
 
         sprintf(command, "%s", gtk_entry_get_text(GTK_ENTRY(edit_rc_cmos)));
-        mat_count_words_in_line(command, &num_of_words);
+        kc_count_words_in_line(command, &num_of_words);
         if(num_of_words==2)
         {
             n1 = (uint16_t)strtol(command, NULL, 0);
-            next_word = mat_go_next_word(command);
+            next_word = kc_go_next_word(command);
             if(next_word!=NULL)
             {
                 n2 = (uint16_t)strtol(next_word, NULL, 0);
@@ -700,7 +702,7 @@ static int run_bright_command()
         uint16_t n;
 
         sprintf(command, "%s", gtk_entry_get_text(GTK_ENTRY(edit_bright)));
-        mat_count_words_in_line(command, &num_of_words);
+        kc_count_words_in_line(command, &num_of_words);
         if(num_of_words==1)
         {
             n = (uint16_t)strtol(command, NULL, 0);
@@ -760,7 +762,7 @@ static void *run_current_program_thread(void *x)
                     {
                         code_look_up_table[codes.cwrds[prog_k].codenum]();
                     }
-                    run_comm_pause_with_arg(500);
+                    kc_sleep(50);
                 }
             }
         }
@@ -960,7 +962,7 @@ static void run_comm_end()
 
 static void run_comm_pause_with_arg(int arg)
 {
-    mat_sleep(arg);
+    kc_sleep(arg);
 }
 
 static void run_comm_brightness_with_arg(int arg)
@@ -970,10 +972,11 @@ static void run_comm_brightness_with_arg(int arg)
 
 static void run_comm_switch_with_arg(int arg)
 {
-    nr_devices = freenect_num_devices(f_ctx);
-    clear_all_data();
     if(arg<0) ++user_device_number;
     else user_device_number = arg;
+    die = 1;
+    pthread_join(freenect_thread, NULL);
+    nr_devices = freenect_num_devices(f_ctx);
     if(user_device_number>=nr_devices) user_device_number = 0;
     die = 0;
     freenect_run();
@@ -1521,30 +1524,37 @@ static void rgb_cb(freenect_device *dev, void *rgb, uint32_t timestamp)
 
 static void *freenect_threadfunc(void *arg)
 {
-    /* freenect_set_tilt_degs(f_dev, freenect_angle); */
     freenect_set_led(f_dev, LED_RED);
     freenect_set_depth_callback(f_dev, depth_cb);
     freenect_set_video_callback(f_dev, rgb_cb);
-    freenect_set_video_mode(f_dev, freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, current_format));
-    freenect_set_depth_mode(f_dev, freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_11BIT));
+
+    freenect_set_video_mode(f_dev, freenect_find_video_mode(current_resolution, current_format));
+    freenect_set_depth_mode(f_dev, freenect_find_depth_mode(current_resolution, FREENECT_DEPTH_11BIT));
     freenect_set_video_buffer(f_dev, rgb_back);
 
-    freenect_start_depth(f_dev);
+    if(depth_on==1 && depth_running==0)
+    {
+        freenect_start_depth(f_dev);
+        depth_running = 1;
+    }
     freenect_start_video(f_dev);
-    capture_mode = 1;
     update_status_text(dispstring[capture_mode], capturing_frame_number);
-
     while(!die && freenect_process_events(f_ctx)>=0)
     {
         if(depth_changed==1)
         {
-            if(depth_on==0)
+            if(depth_on==0 && depth_running==1)
             {
                 freenect_stop_depth(f_dev);
+                depth_running = 0;
                 memset(depth_mid, 0, 640*480*3); /* black out the depth camera */
                 got_depth = 1;
             }
-            else freenect_start_depth(f_dev);
+            else if(depth_running==0 && depth_on==1)
+            {
+                freenect_start_depth(f_dev);
+                depth_running = 1;
+            }
             depth_changed = 0;
         }
         if(requested_format!=current_format||requested_resolution!=current_resolution)
@@ -1626,25 +1636,76 @@ static void *freenect_threadfunc(void *arg)
                 }
             }
             freenect_start_video(f_dev);
-            if(capture_mode<5 && depth_on==1) freenect_start_depth(f_dev);
+            if(capture_mode<5 && depth_on==1 && depth_running==0)
+            {
+                freenect_start_depth(f_dev);
+                depth_running = 1;
+            }
             projector_on = 1;
             update_status_text(dispstring[capture_mode], capturing_frame_number);
         }
 
     }
     freenect_set_led(f_dev, LED_OFF);
-    freenect_stop_depth(f_dev);
+    if(depth_on==1 && depth_running==1)
+    {
+        freenect_stop_depth(f_dev);
+        depth_running = 0;
+    }
     freenect_stop_video(f_dev);
     freenect_close_device(f_dev);
-    freenect_shutdown(f_ctx);
+    die = 0;
     return NULL;
 }
 
 static int freenect_run()
 {
+    initflag = 0;
+    if(freenect_init(&f_ctx, NULL)>=0)
+        {
+            freenect_set_log_level(f_ctx, FREENECT_LOG_FATAL);
+            freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
+
+    do
+    {
+           nr_devices = freenect_num_devices(f_ctx);
+            if(nr_devices>0)
+            {
+                printf("May be here!\n");
+                if(freenect_open_device(f_ctx, &f_dev, user_device_number)>=0) initflag = 1;
+            }
+
+        if(initflag==0)
+        {
+            cndlg = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_YES_NO, "Could not connect to the Kinect Device. Retry?");
+            gtk_window_set_title(GTK_WINDOW(cndlg), "Device Connection Failure");
+            if(gtk_dialog_run(GTK_DIALOG(cndlg))==GTK_RESPONSE_NO)
+            {
+                gtk_widget_destroy(cndlg);
+                return 1;
+            };
+            gtk_widget_destroy(cndlg);
+        }
+
+    }
+    while(initflag==0);
+    initialize_all_data();
+    capture_mode = 1;
+    res = pthread_create(&freenect_thread, NULL, freenect_threadfunc, NULL);
+    if(res)
+    {
+        clear_all_data();
+        freenect_shutdown(f_ctx);
+        return 1;
+    }
+        }
+    return 0;
+}
+
+static void initialize_all_data()
+{
     int i;
     float v;
-    initflag = 0;
     depth_mid = (uint8_t*)malloc(640*480*3);
     depth_mid_raw = (uint8_t*)malloc(640*480*2);
     depth_front = (uint8_t*)malloc(640*480*3);
@@ -1687,43 +1748,4 @@ static int freenect_run()
         v = powf(v, 3)*6;
         t_gamma[i] = (uint16_t)(v*1536.0);
     }
-
-    do
-    {
-        if(freenect_init(&f_ctx, NULL)>=0)
-        {
-            freenect_set_log_level(f_ctx, FREENECT_LOG_FATAL);
-            freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
-            nr_devices = freenect_num_devices(f_ctx);
-            if(nr_devices<1) freenect_shutdown(f_ctx);
-            else
-            {
-                if(freenect_open_device(f_ctx, &f_dev, user_device_number)<0) freenect_shutdown(f_ctx);
-                else initflag = 1;
-            }
-        }
-
-        if(initflag==0)
-        {
-            cndlg = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_YES_NO, "Could not connect to the Kinect Device. Retry?");
-            gtk_window_set_title(GTK_WINDOW(cndlg), "Device Connection Failure");
-            if(gtk_dialog_run(GTK_DIALOG(cndlg))==GTK_RESPONSE_NO)
-            {
-                gtk_widget_destroy(cndlg);
-                return 1;
-            };
-            gtk_widget_destroy(cndlg);
-        }
-
-    }
-    while(initflag==0);
-
-    res = pthread_create(&freenect_thread, NULL, freenect_threadfunc, NULL);
-    if(res)
-    {
-        freenect_shutdown(f_ctx);
-        return 1;
-    }
-    return 0;
 }
-

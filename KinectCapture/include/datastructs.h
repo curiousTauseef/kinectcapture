@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <stdlib.h>
-#define STACK_MAX 100
+#define STACK_MAX 128
 
 #define STACK_MALLOC 0
 #define STACK_EMPTY 1
@@ -52,6 +52,6 @@ void dtype_stack_push(DTYPE_STACK s, dtype value);
 dtype dtype_stack_pop(DTYPE_STACK s);
 DTYPE dtype_stack_top(DTYPE_STACK s);
 int dtype_stack_is_empty(DTYPE_STACK s);
-int stack_error(int err_);
+int dtype_stack_error(int err_);
 
 #endif

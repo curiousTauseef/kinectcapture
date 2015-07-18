@@ -22,8 +22,8 @@
 #ifndef __PROGRAM__
 #define __PROGRAM__
 
-#include "../include/strfuncs.h"
-#include "../include/datastructs.h"
+#include "strfuncs.h"
+#include "datastructs.h"
 
 #define NUM_CODEWORDS 12
 
@@ -43,7 +43,7 @@ typedef struct __pcode
 } pcode;
 
 extern pcode codes;
-int mat_read_word(FILEPOINTER fp, char *c_word);
+int kc_read_word(FILEPOINTER fp, char *c_word);
 int getcodenum(const char *str);
 pcodeword parse_line_program_file(FILEPOINTER fp);
 void load_program_code(const char *fname);

@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include "../include/strfuncs.h"
 
-char *mat_go_next_word(char *fp)
+char *kc_go_next_word(char *fp)
 {
     int flag = 0;
     char ch = 0;
@@ -46,7 +46,7 @@ char *mat_go_next_word(char *fp)
     else return NULL;
 }
 
-int mat_count_words_in_line(const char *fp, int *count)
+int kc_count_words_in_line(const char *fp, int *count)
 {
     int flag = -1;
     char ch = 0;

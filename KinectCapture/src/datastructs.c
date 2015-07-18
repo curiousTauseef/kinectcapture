@@ -66,7 +66,7 @@ int dtype_stack_is_empty(DTYPE_STACK s)
     return ((int)(s->p==0));
 }
 
-int stack_error(int err_)
+int dtype_stack_error(int err_)
 {
     switch(err_)
     {
