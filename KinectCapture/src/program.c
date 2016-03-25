@@ -42,11 +42,10 @@ pcode codes;
 
 int kc_read_word(FILEPOINTER fp, char *c_word)
 {
-    int flag = 0, t = 0, comment_flag = 0;
-    char ch = 0;
-    while((flag < 3) && ((ch = (char)getc(fp))!= EOF))/*no need for state 3 to be corrected*/
+    int flag = 0, t = 0, comment_flag = 0, ch = 0;
+    while((flag<3) && ((ch = getc(fp))!= EOF)) /*no need for state 3 to be corrected*/
     {
-        if ((ch =='\v') || (ch =='\r') || (ch =='\n') || (ch =='\t') || isspace(ch) || (ch == ',') || (ch == '!') || (ch == '(') || (ch == ')') || (ch == '{') || (ch == '}') || (ch == '[') || (ch == ']'))
+        if((ch =='\v') || (ch =='\r') || (ch =='\n') || (ch =='\t') || isspace(ch) || (ch == ',') || (ch == '!') || (ch == '(') || (ch == ')') || (ch == '{') || (ch == '}') || (ch == '[') || (ch == ']'))
         {
             if(flag != 0) flag = 2;
         }
@@ -79,7 +78,7 @@ int kc_read_word(FILEPOINTER fp, char *c_word)
         }
         else return 2;
     }
-    if(ch != EOF)
+    if(ch!=EOF)
     {
         ungetc(ch, fp);
         return 1;
