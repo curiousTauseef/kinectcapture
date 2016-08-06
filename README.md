@@ -14,7 +14,7 @@ d) gtkglext
 e) gl, glu
 f) code-blocks.
 
-Precompiled Installers are available as [Windows Installer (32bit)](https://dl.dropboxusercontent.com/u/21730341/KinectCapture_0.3.3.msi) and [Debian Installer (32bit, unverified)](https://dl.dropboxusercontent.com/u/21730341/kinectcapture_0.3.3_i386.deb).
+Precompiled Installers are available as [Windows Installer (32bit)](http://mohammadulhaque.alotspace.com/download.php?id=56285) and [Debian Installer (32bit, unverified)](http://mohammadulhaque.alotspace.com/download.php?id=56286).
 
 Precompiled Installer for version 0.4.0 (Qt version) is available as [Windows Installer (32bit)](http://mohammadulhaque.alotspace.com/download.php?id=56281).
 
